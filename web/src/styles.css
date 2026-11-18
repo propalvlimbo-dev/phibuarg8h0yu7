@@ -5,6 +5,7 @@
   --label-3: rgba(235, 235, 245, 0.32);
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter Variable', 'Segoe UI', system-ui, sans-serif;
   --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
   color: var(--label);
   background: var(--bg);
@@ -214,22 +215,8 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   color: #fff;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.5s var(--spring);
+  transition: transform 0.7s var(--smooth);
 }
-
-/* Breathing blurple halo */
-.discord-halo {
-  position: absolute;
-  inset: -12px -8px;
-  z-index: -2;
-  border-radius: inherit;
-  background: radial-gradient(60% 80% at 50% 55%, rgba(88, 101, 242, 0.85), transparent 72%);
-  filter: blur(20px);
-  opacity: 0.42;
-  animation: halo 3.6s ease-in-out infinite;
-  transition: opacity 0.6s ease;
-}
-@keyframes halo { 50% { opacity: 0.72; transform: scale(1.05); } }
 
 /* Body */
 .discord-body {
@@ -241,8 +228,8 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 16px 36px -14px rgba(88, 101, 242, 0.9);
-  transition: filter 0.5s ease;
+    0 8px 20px -10px rgba(0, 0, 0, 0.55);
+  transition: filter 0.7s var(--smooth);
 }
 /* Periodic light sweep */
 .discord-shine { position: absolute; inset: 0; }
@@ -270,9 +257,9 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  opacity: 0.75;
+  opacity: 0.6;
   animation: ring 4.8s linear infinite;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.7s var(--smooth);
   pointer-events: none;
 }
 @keyframes ring { to { --ring: 360deg; } }
@@ -289,40 +276,32 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.discord-label { transition: text-shadow 0.5s ease; }
 
-/* Clyde: eyes are holes; a warm light behind them ignites on hover */
-.clyde {
-  width: 30px;
-  height: 23px;
-  overflow: visible;
-  transform-origin: 50% 70%;
-  transition: transform 0.7s var(--spring), filter 0.6s ease;
-}
+/* Clyde: eyes are holes; a warm light behind them fades in on hover */
+.clyde-wrap { display: grid; place-items: center; transition: transform 0.7s var(--smooth); }
+.clyde { display: block; width: 30px; height: 23px; overflow: visible; transform-origin: 50% 62%; }
 .clyde-body { fill: #fff; }
-.clyde-eyes { fill: #ffd76a; opacity: 0; }
+.clyde-eyes { fill: #ffd76a; opacity: 0; transition: opacity 0.8s var(--smooth) 0.12s; }
 
-.discord:hover { transform: translateY(-2px); }
-.discord:hover .discord-halo { opacity: 1; animation-play-state: paused; }
-.discord:hover .discord-ring { opacity: 1; }
-.discord:hover .discord-body { filter: brightness(1.08) saturate(1.05); }
-.discord:hover .discord-label { text-shadow: 0 0 14px rgba(255, 255, 255, 0.45); }
-.discord:hover .clyde {
-  transform: translateY(-2px) rotate(-9deg) scale(1.1);
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 14px rgba(255, 215, 106, 0.55));
-}
-.discord:hover .clyde-eyes { animation: hope 1.2s ease-out forwards, glow 2.6s ease-in-out 1.2s infinite; }
-@keyframes hope {
-  0% { opacity: 0; }
-  10% { opacity: 0.85; }
-  18% { opacity: 0.1; }
-  32% { opacity: 1; }
-  40% { opacity: 0.35; }
-  58%, 100% { opacity: 1; }
-}
-@keyframes glow { 50% { opacity: 0.72; } }
+.discord:hover { transform: translateY(-1px); }
+.discord:hover .discord-ring { opacity: 0.9; }
+.discord:hover .discord-body { filter: brightness(1.06); }
+.discord:hover .clyde-wrap { transform: scale(1.08); }
+.discord:hover .clyde { animation: wiggle 0.95s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.discord:hover .clyde-eyes { opacity: 1; }
 
-.discord:active { transform: translateY(0) scale(0.98); }
+/* Discord-style damped wiggle */
+@keyframes wiggle {
+  0% { transform: rotate(0deg); }
+  14% { transform: rotate(-14deg); }
+  30% { transform: rotate(11deg); }
+  46% { transform: rotate(-7deg); }
+  62% { transform: rotate(4deg); }
+  78% { transform: rotate(-1.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.discord:active { transform: translateY(0) scale(0.985); transition-duration: 0.2s; }
 .discord:focus-visible { outline: 3px solid rgba(255, 255, 255, 0.6); outline-offset: 5px; }
 
 /* ---------- Responsive ---------- */

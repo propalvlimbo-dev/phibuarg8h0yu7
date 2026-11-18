@@ -12,19 +12,20 @@ const CLYDE =
 export default function DiscordButton({ label, ariaLabel, onClick }: Props) {
   return (
     <button className="discord" type="button" onClick={onClick} aria-label={ariaLabel ?? label}>
-      <span className="discord-halo" aria-hidden="true" />
       <span className="discord-ring" aria-hidden="true" />
       <span className="discord-body" aria-hidden="true">
         <span className="discord-shine" />
       </span>
       <span className="discord-content">
-        <svg className="clyde" viewBox="0 0 127.14 96.36" aria-hidden="true">
-          <g className="clyde-eyes">
-            <ellipse cx="42.45" cy="53" rx="12.2" ry="13.4" />
-            <ellipse cx="84.69" cy="53" rx="12.2" ry="13.4" />
-          </g>
-          <path className="clyde-body" d={CLYDE} fillRule="evenodd" />
-        </svg>
+        <span className="clyde-wrap" aria-hidden="true">
+          <svg className="clyde" viewBox="0 0 127.14 96.36">
+            <g className="clyde-eyes">
+              <ellipse cx="42.45" cy="53" rx="12.2" ry="13.4" />
+              <ellipse cx="84.69" cy="53" rx="12.2" ry="13.4" />
+            </g>
+            <path className="clyde-body" d={CLYDE} fillRule="evenodd" />
+          </svg>
+        </span>
         <span className="discord-label">{label}</span>
       </span>
     </button>
