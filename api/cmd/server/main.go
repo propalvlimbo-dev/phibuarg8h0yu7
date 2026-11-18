@@ -12,9 +12,10 @@ import (
 )
 
 type room struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Members int    `json:"members"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Members  int    `json:"members"`
+	Capacity int    `json:"capacity"`
 }
 
 type roomsResponse struct {
@@ -56,9 +57,9 @@ func roomsHandler(w http.ResponseWriter, _ *http.Request) {
 	// This endpoint deliberately returns aggregate room counts only.
 	// User identities, gender roles, and real-time member locations are never exposed here.
 	writeJSON(w, http.StatusOK, roomsResponse{Rooms: []room{
-		{ID: "lounge", Name: "Лаунж", Members: 12},
-		{ID: "music", Name: "Музыка", Members: 8},
-		{ID: "night", Name: "Ночной чат", Members: 21},
+		{ID: "lounge", Name: "Лаунж", Members: 12, Capacity: 25},
+		{ID: "music", Name: "Музыка", Members: 8, Capacity: 20},
+		{ID: "night", Name: "Ночной чат", Members: 21, Capacity: 30},
 	}})
 }
 
