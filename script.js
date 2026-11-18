@@ -1,21 +1,16 @@
-const modal = document.querySelector('#modal');
-const open = document.querySelector('#openModal');
-const close = document.querySelector('#closeModal');
-const form = document.querySelector('#waitlistForm');
-const message = document.querySelector('#formMessage');
+const dialog = document.querySelector('#dialog');
+const openButtons = [document.querySelector('#openDialog'), document.querySelector('#openDialogSecond')];
+const closeButton = document.querySelector('#closeDialog');
+const form = document.querySelector('#waitlist');
+const formText = document.querySelector('#formText');
 
-function toggleModal(show) {
-  modal.classList.toggle('visible', show);
-  modal.setAttribute('aria-hidden', String(!show));
-  if (show) modal.querySelector('input').focus();
-}
-
-open.addEventListener('click', () => toggleModal(true));
-close.addEventListener('click', () => toggleModal(false));
-modal.addEventListener('click', (event) => { if (event.target === modal) toggleModal(false); });
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleModal(false); });
+openButtons.forEach((button) => button.addEventListener('click', () => dialog.showModal()));
+closeButton.addEventListener('click', () => dialog.close());
+dialog.addEventListener('click', (event) => {
+  if (event.target === dialog) dialog.close();
+});
 form.addEventListener('submit', (event) => {
   event.preventDefault();
-  message.textContent = 'Готово — мы сохранили твоё место в очереди.';
+  formText.textContent = 'Готово. Скоро отправим приглашение.';
   form.reset();
 });
