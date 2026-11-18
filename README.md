@@ -1,14 +1,13 @@
 # GirlScan
 
-React + TypeScript frontend, three.js intro (crystal lens scan), CSS 3D room orbit, and Go API.
+React + TypeScript frontend (minimal Apple-style glass UI with a rotatable 3D room carousel) and Go API.
 
 ## Interface
 
-- **Intro** — a faceted glass magnifier (three.js, bloom) scans 4 points, leaving a thin light trail and particles, then shrinks into the icon above the console. Click or press any key to skip. Respects `prefers-reduced-motion`.
-- **Console** — one large block with a rotatable 3D orbit of voice rooms: drag / swipe, arrow keys, click a side room, or use the pager.
-- **ВОЙТИ** — opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
+- One large glass console with three voice rooms on a 3D carousel: drag / swipe, arrow keys, click a side room, or use the page dots.
+- **ВОЙТИ** opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
 
-Code: `web/src/scene/lensScene.ts` (WebGL intro), `web/src/components/RoomOrbit.tsx` (3D orbit), `web/src/rooms.ts` (data / placeholder rooms).
+Code: `web/src/components/RoomOrbit.tsx` (3D carousel), `web/src/rooms.ts` (data / placeholder rooms), `web/src/styles.css` (glass material).
 
 ## Production (recommended)
 

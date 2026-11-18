@@ -9,7 +9,7 @@ type Props = {
   revealed: boolean;
 };
 
-const BARS = 34;
+const BARS = 28;
 const DRAG_SENSITIVITY = 0.32; // degrees per pixel
 const SPRING_K = 58;
 const SPRING_C = 2 * Math.sqrt(SPRING_K) * 0.92;
@@ -32,12 +32,12 @@ function VoiceBars({ room }: { room: Room }) {
     const rand = seeded(room.id);
     const level = Math.min(1, 0.35 + room.members / 30);
     return Array.from({ length: BARS }, (_, i) => {
-      const envelope = Math.sin((i / (BARS - 1)) * Math.PI) * 0.7 + 0.3;
-      const hi = Math.max(0.12, Math.min(1, envelope * level * (0.55 + rand() * 0.6)));
+      const envelope = Math.sin((i / (BARS - 1)) * Math.PI) * 0.75 + 0.25;
+      const hi = Math.max(0.14, Math.min(1, envelope * level * (0.6 + rand() * 0.5)));
       return {
         '--hi': hi.toFixed(3),
         '--lo': (hi * (0.12 + rand() * 0.25)).toFixed(3),
-        '--dur': `${(0.7 + rand() * 0.9).toFixed(2)}s`,
+        '--dur': `${(0.9 + rand() * 1.1).toFixed(2)}s`,
         '--delay': `${(-rand() * 1.6).toFixed(2)}s`,
       } as CSSProperties;
     });
@@ -58,15 +58,14 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
 
   const stageRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
-  const dialRef = useRef<HTMLDivElement>(null);
   const slabRefs = useRef<(HTMLElement | null)[]>([]);
   const activeRef = useRef(active);
   const onActiveRef = useRef(onActiveChange);
   onActiveRef.current = onActiveChange;
 
   const sim = useRef({
-    rot: -step * 1.6,
-    target: -step * 1.6,
+    rot: -step * 0.3,
+    target: -step * 0.3,
     vel: 0,
     dragging: false,
     pointerId: -1,
@@ -92,7 +91,7 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
     if (!stage) return;
     const measure = () => {
       const slab = slabRefs.current[0];
-      if (slab) sim.current.radius = slab.offsetWidth * 1.3;
+      if (slab) sim.current.radius = slab.offsetWidth * 1.25;
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -132,16 +131,14 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         const x = Math.sin(rad) * R;
         const z = (Math.cos(rad) - 1) * R;
         const focus = (Math.cos(rad) + 1) / 2;
-        el.style.transform = `translate3d(${x.toFixed(2)}px, 0, ${z.toFixed(2)}px) rotateY(${(theta * 0.3).toFixed(2)}deg)`;
+        el.style.transform = `translate3d(${x.toFixed(2)}px, 0, ${z.toFixed(2)}px) rotateY(${(theta * 0.28).toFixed(2)}deg)`;
+        el.style.opacity = (0.38 + 0.62 * Math.pow(focus, 1.4)).toFixed(3);
         el.style.setProperty('--focus', focus.toFixed(3));
         el.style.zIndex = String(Math.round(focus * 100));
       }
 
-      if (dialRef.current) {
-        dialRef.current.style.setProperty('--spin', `${s.rot.toFixed(2)}deg`);
-      }
       if (sceneRef.current) {
-        sceneRef.current.style.transform = `rotateX(${(-7 - s.tiltY * 3).toFixed(2)}deg) rotateY(${(s.tiltX * 6).toFixed(2)}deg)`;
+        sceneRef.current.style.transform = `rotateX(${(-3 - s.tiltY * 2).toFixed(2)}deg) rotateY(${(s.tiltX * 4).toFixed(2)}deg)`;
       }
 
       const nearest = mod(Math.round(s.rot / step), count);
@@ -251,15 +248,6 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         onKeyDown={onKeyDown}
       >
         <div ref={sceneRef} className="orbit-scene">
-          <div ref={dialRef} className="dial" aria-hidden="true">
-            <div className="dial-rotor">
-              {rooms.map((room, i) => (
-                <span key={room.id} className="dial-mark" style={{ '--a': `${90 - i * step}deg` } as CSSProperties} />
-              ))}
-            </div>
-            <div className="dial-focus" />
-          </div>
-
           {rooms.map((room, i) => {
             const capacity = room.capacity ?? Math.max(room.members, 1);
             const fill = Math.min(1, room.members / capacity);
@@ -270,35 +258,23 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
                 ref={(el) => {
                   slabRefs.current[i] = el;
                 }}
-                className={`slab ${i === active ? 'is-active' : ''}`}
+                className={`slab glass-pane ${i === active ? 'is-active' : ''}`}
                 data-index={i}
                 role="option"
                 aria-selected={i === active}
                 aria-label={`${room.name}, ${room.members} в эфире`}
               >
-                <div className="face front">
-                  <div className="slab-top">
-                    <span className="mono">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="pulse" />
+                <h2 className="slab-name">{room.name}</h2>
+                <VoiceBars room={room} />
+                <div className="slab-foot">
+                  <div className="count">
+                    <b>{room.members}</b>
+                    {room.capacity ? <span>из {room.capacity}</span> : null}
                   </div>
-                  <h2 className="slab-name">{room.name}</h2>
-                  <VoiceBars room={room} />
-                  <div className="slab-foot">
-                    <div className="count mono">
-                      <b>{room.members}</b>
-                      {room.capacity ? <span>/{room.capacity}</span> : null}
-                    </div>
-                    <span className="label">в эфире</span>
-                    <div className="meter">
-                      <i style={{ transform: `scaleX(${fill})` }} />
-                    </div>
+                  <div className="meter">
+                    <i style={{ transform: `scaleX(${fill})` }} />
                   </div>
                 </div>
-                <div className="face edge edge-l" />
-                <div className="face edge edge-r" />
-                <div className="face edge edge-t" />
-                <div className="face edge edge-b" />
-                <div className="face back" />
               </article>
             );
           })}
