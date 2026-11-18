@@ -3,61 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f5f5f2" />
-  <meta name="description" content="GirlScan — пространство для закрытых комьюнити." />
+  <meta name="theme-color" content="#08090c" />
   <title>GirlScan</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="page">
-    <header class="header">
-      <a class="logo" href="#top" aria-label="GirlScan">
-        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M12 4a8 8 0 1 0 5.65 13.65L23 23l1.8-1.8-5.35-5.35A8 8 0 0 0 12 4Zm0 2.55A5.45 5.45 0 1 1 6.55 12 5.45 5.45 0 0 1 12 6.55Z"/></svg>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="scan-field" aria-hidden="true">
+    <span class="grid-line grid-one"></span><span class="grid-line grid-two"></span>
+    <i class="signal s-one"></i><i class="signal s-two"></i><i class="signal s-three"></i>
+  </div>
+
+  <div class="lens-flight" id="lens" aria-hidden="true">
+    <svg viewBox="0 0 100 100" fill="none">
+      <defs>
+        <linearGradient id="crystal" x1="23" y1="17" x2="77" y2="71" gradientUnits="userSpaceOnUse"><stop stop-color="#E8FBFF"/><stop offset=".45" stop-color="#63CDF8"/><stop offset="1" stop-color="#375DFF"/></linearGradient>
+        <linearGradient id="handle" x1="58" y1="56" x2="83" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#7DE0FF"/><stop offset="1" stop-color="#3452D9"/></linearGradient>
+      </defs>
+      <path d="M49.6 10.5 71 22.9l.1 24.8L49.6 60.2 28.1 47.7V22.9l21.5-12.4Z" fill="url(#crystal)" stroke="#B9F2FF" stroke-width="1.5"/>
+      <path d="m49.6 10.5.1 49.7m21.4-37.3-43 24.8m0-24.8 43 24.8M37.2 17.7l24.8 43m0-43-24.8 43" stroke="#D8FAFF" stroke-opacity=".48" stroke-width="1.2"/>
+      <path d="m65.5 54.6 9.8-5.6 14.2 24.6-10.4 6L65.5 54.6Z" fill="url(#handle)" stroke="#BDF4FF" stroke-width="1.5"/>
+      <path d="m75.3 49 3.8 30.6m-3.8-30.6 14.2 24.6m-24-19 13.6 8" stroke="#E2FBFF" stroke-opacity=".48" stroke-width="1.15"/>
+    </svg>
+  </div>
+
+  <main class="site">
+    <header class="header reveal">
+      <a href="#top" class="brand" aria-label="GirlScan">
+        <span class="avatar-slot" id="avatarSlot"></span>
         <span>GirlScan</span>
       </a>
-      <nav aria-label="Навигация">
-        <a href="#about">О проекте</a>
-        <a href="#rules">Правила</a>
-      </nav>
-      <button class="text-button" id="openDialog" type="button">Ранний доступ <span>↗</span></button>
+      <span class="header-status"><i></i> private beta</span>
     </header>
 
-    <section class="hero" id="top">
-      <p class="kicker">GIRLSCAN / 01</p>
-      <h1>Твоё комьюнити.<br><i>В одном месте.</i></h1>
-      <p class="intro">Закрытое пространство для участников твоего сервера.<br>Просто, спокойно, по согласию.</p>
-      <div class="actions">
-        <button class="button" id="openDialogSecond" type="button">Получить доступ <span>→</span></button>
-        <span class="note">Скоро в закрытой бете</span>
+    <section class="hero reveal" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">COMMUNITY RADAR <span>•</span> 01</p>
+        <h1>Найти своих.<br><em>Без шума.</em></h1>
+        <p class="lead">Закрытое пространство для комьюнити.<br>Только участники. Только по согласию.</p>
       </div>
+
+      <section class="room-panel" aria-label="Румы">
+        <div class="panel-head"><span>АКТИВНЫЕ РУМЫ</span><span>03</span></div>
+        <div class="rooms">
+          <article class="room"><span class="room-icon">✦</span><div><strong>Лаунж</strong><small>Открытая беседа</small></div><span class="room-live"><i></i> 12</span></article>
+          <article class="room"><span class="room-icon">◌</span><div><strong>Музыка</strong><small>Слушаем вместе</small></div><span class="room-live"><i></i> 08</span></article>
+          <article class="room"><span class="room-icon">◇</span><div><strong>Ночной чат</strong><small>Для своих</small></div><span class="room-live"><i></i> 21</span></article>
+        </div>
+        <button type="button" class="login-button" id="login">ВОЙТИ <span>→</span></button>
+      </section>
     </section>
 
-    <section class="bottom" id="about" aria-label="Информация">
-      <div class="statement"><span class="dot"></span> Только для приглашённых сообществ</div>
-      <div class="numbers">
-        <div><strong>01</strong><span>Только opt-in</span></div>
-        <div><strong>02</strong><span>Без рекламы</span></div>
-        <div><strong>03</strong><span>Твои данные — твои</span></div>
-      </div>
-    </section>
-
-    <footer id="rules">
-      <span>© 2026 GIRLSCAN</span>
-      <span>PRIVACY FIRST</span>
-    </footer>
+    <footer class="reveal"><span>© 2026 GIRLSCAN</span><span>OPT-IN ONLY</span><span>PRIVACY FIRST</span></footer>
   </main>
 
-  <dialog id="dialog">
-    <button class="close" id="closeDialog" type="button" aria-label="Закрыть">×</button>
-    <p class="kicker">РАННИЙ ДОСТУП</p>
-    <h2>GirlScan<br>скоро откроется.</h2>
-    <p>Оставь email — отправим приглашение в бету.</p>
-    <form id="waitlist">
-      <label><span>Email</span><input type="email" placeholder="name@email.com" required></label>
-      <button class="button" type="submit">Отправить <span>→</span></button>
-    </form>
-    <small id="formText">Без спама.</small>
-  </dialog>
+  <div class="login-modal" id="modal" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="close" aria-label="Закрыть">×</button>
+      <p class="eyebrow">ВХОД</p><h2 id="modalTitle">Скоро откроемся.</h2>
+      <p>Доступ будет только по приглашению.</p>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
