@@ -1,0 +1,12 @@
+# Frontend
+web/node_modules/
+web/dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS/editor
+.DS_Store
+.vscode/
