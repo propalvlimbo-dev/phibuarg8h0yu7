@@ -12,7 +12,6 @@ const CLYDE =
 export default function DiscordButton({ label, ariaLabel, onClick }: Props) {
   return (
     <button className="discord" type="button" onClick={onClick} aria-label={ariaLabel ?? label}>
-      <span className="discord-ring" aria-hidden="true" />
       <span className="discord-body" aria-hidden="true">
         <span className="discord-shine" />
       </span>
