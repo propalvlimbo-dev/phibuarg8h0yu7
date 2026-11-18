@@ -79,6 +79,10 @@ export default function App() {
   const [rooms, setRooms] = useState<Room[]>(previewRooms);
 
   useEffect(() => {
+    // During local Vite development use safe preview data.
+    // The Go API is requested only in the production build, where both run on one origin.
+    if (import.meta.env.DEV) return;
+
     const controller = new AbortController();
     fetch('/api/rooms', { signal: controller.signal, headers: { Accept: 'application/json' } })
       .then((response) => (response.ok ? response.json() : Promise.reject()))
@@ -94,12 +98,12 @@ export default function App() {
       <div className="ambient" aria-hidden="true" />
       <motion.div
         className="lens"
-        initial={reduceMotion ? { opacity: 1, x: -21, y: -220, scale: 0.3 } : { opacity: 0, x: -900, y: 180, scale: 1.25 }}
-        animate={reduceMotion ? { opacity: 1, x: -21, y: -220, scale: 0.3 } : {
+        initial={reduceMotion ? { opacity: 1, x: -74, y: -245, scale: 0.55 } : { opacity: 0, x: -900, y: 180, scale: 1.25 }}
+        animate={reduceMotion ? { opacity: 1, x: -74, y: -245, scale: 0.55 } : {
           opacity: [0, 1, 1, 1, 1, 1],
-          x: [-900, -74, -270, 148, -74, -21],
-          y: [180, -74, -180, 96, -74, -220],
-          scale: [1.25, 1, 0.88, 0.95, 1, 0.3],
+          x: [-900, -74, -270, 148, -74, -74],
+          y: [180, -74, -180, 96, -74, -245],
+          scale: [1.25, 1, 0.88, 0.95, 1, 0.55],
           rotate: [-18, 0, 10, -9, 2, 0],
         }}
         transition={reduceMotion ? { duration: 0 } : { duration: 3.45, times: [0, 0.22, 0.43, 0.66, 0.82, 1], ease: [0.42, 0, 0.2, 1] }}
