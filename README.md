@@ -4,10 +4,10 @@ React + TypeScript frontend (minimal Apple-style glass UI with a rotatable 3D ro
 
 ## Interface
 
-- One large glass console with three voice rooms on a 3D carousel: drag / swipe, arrow keys, click a side room, or use the page dots.
-- **ВОЙТИ** opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
+- Three voice rooms as glass cards on a 3D carousel — drag / swipe anywhere on the page, arrow keys, click a side card, or use the page dots.
+- **Discord button** (animated rim light, breathing halo, Clyde eyes light up on hover) opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
 
-Code: `web/src/components/RoomOrbit.tsx` (3D carousel), `web/src/rooms.ts` (data / placeholder rooms), `web/src/styles.css` (glass material).
+Code: `web/src/components/RoomOrbit.tsx` (3D carousel), `web/src/components/DiscordButton.tsx`, `web/src/rooms.ts` (data / placeholder rooms), `web/src/styles.css` (glass material).
 
 ## Production (recommended)
 

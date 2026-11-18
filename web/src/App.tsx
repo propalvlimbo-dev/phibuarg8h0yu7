@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import DiscordButton from './components/DiscordButton';
 import RoomOrbit from './components/RoomOrbit';
 import { useRooms } from './rooms';
 import './styles.css';
@@ -24,6 +25,15 @@ export default function App() {
     if (inviteUrl) window.location.assign(inviteUrl);
   };
 
+  const appear = (delay: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18, filter: 'blur(10px)' },
+          animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+          transition: { type: 'spring' as const, stiffness: 110, damping: 22, delay },
+        };
+
   return (
     <main className="app">
       <div className="backdrop" aria-hidden="true">
@@ -32,28 +42,22 @@ export default function App() {
         <span className="light light-c" />
       </div>
 
+      <motion.header className="corner" {...appear(0.05)}>
+        <span className="wordmark">GirlScan</span>
+        <span className="live">
+          <i />
+          {total} в эфире
+        </span>
+      </motion.header>
+
       <div className="shell">
-        <motion.section
-          className="console glass"
-          aria-label="GirlScan"
-          initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.97, filter: 'blur(12px)' }}
-          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-          transition={{ type: 'spring', stiffness: 120, damping: 22, mass: 1 }}
-        >
-          <header className="console-bar">
-            <span className="wordmark">GirlScan</span>
-            <span className="live">
-              <i />
-              {total} в эфире
-            </span>
-          </header>
-
+        <motion.div className="stage-wrap" {...appear(0.1)}>
           <RoomOrbit rooms={rooms} active={active} onActiveChange={setActive} revealed={revealed} />
+        </motion.div>
 
-          <button className="enter" type="button" onClick={enter} aria-label={current ? `Войти в ${current.name}` : 'Войти'}>
-            ВОЙТИ
-          </button>
-        </motion.section>
+        <motion.div className="cta" {...appear(0.25)}>
+          <DiscordButton label="Войти через Discord" ariaLabel={current ? `Войти в ${current.name} через Discord` : undefined} onClick={enter} />
+        </motion.div>
       </div>
 
       <p className="sr-only" aria-live="polite">

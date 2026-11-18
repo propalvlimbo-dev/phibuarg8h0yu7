@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react';
+import type { CSSProperties } from 'react';
 import type { Room } from '../rooms';
 
 type Props = {
@@ -80,7 +80,7 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
     aimY: 0,
   });
 
-  // Spin in once the console is revealed.
+  // Settle into place once revealed.
   useEffect(() => {
     if (revealed) sim.current.target = 0;
   }, [revealed]);
@@ -169,67 +169,90 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
     }
   }, [active, goTo]);
 
-  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
+  // Drag, swipe, click and arrow keys work across the whole page, not just the stage.
+  useEffect(() => {
     const s = sim.current;
-    s.dragging = true;
-    s.pointerId = e.pointerId;
-    s.startX = s.lastX = e.clientX;
-    s.lastT = performance.now();
-    s.moved = 0;
-    s.vel = 0;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
+    let downTarget: EventTarget | null = null;
+    const interactive = (t: EventTarget | null) =>
+      t instanceof Element && Boolean(t.closest('button, a, input, textarea, select, [data-no-drag]'));
 
-  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    const s = sim.current;
-    const stage = stageRef.current;
-    if (stage) {
-      const r = stage.getBoundingClientRect();
-      s.aimX = ((e.clientX - r.left) / r.width - 0.5) * 2;
-      s.aimY = ((e.clientY - r.top) / r.height - 0.5) * 2;
-    }
-    if (!s.dragging || e.pointerId !== s.pointerId) return;
-    const now = performance.now();
-    const dx = e.clientX - s.lastX;
-    const dtt = Math.max(1, now - s.lastT) / 1000;
-    s.rot -= dx * DRAG_SENSITIVITY;
-    s.vel = s.vel * 0.6 + ((-dx * DRAG_SENSITIVITY) / dtt) * 0.4;
-    s.moved = Math.max(s.moved, Math.abs(e.clientX - s.startX));
-    s.lastX = e.clientX;
-    s.lastT = now;
-  };
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 || interactive(e.target)) return;
+      s.dragging = true;
+      s.pointerId = e.pointerId;
+      s.startX = s.lastX = e.clientX;
+      s.lastT = performance.now();
+      s.moved = 0;
+      s.vel = 0;
+      downTarget = e.target;
+      document.documentElement.classList.add('is-dragging');
+    };
 
-  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    const s = sim.current;
-    if (!s.dragging || e.pointerId !== s.pointerId) return;
-    s.dragging = false;
-    if (performance.now() - s.lastT > 80) s.vel = 0;
+    const onMove = (e: PointerEvent) => {
+      s.aimX = (e.clientX / window.innerWidth - 0.5) * 2;
+      s.aimY = (e.clientY / window.innerHeight - 0.5) * 2;
+      if (!s.dragging || e.pointerId !== s.pointerId) return;
+      const now = performance.now();
+      const dx = e.clientX - s.lastX;
+      const dtt = Math.max(1, now - s.lastT) / 1000;
+      s.rot -= dx * DRAG_SENSITIVITY;
+      s.vel = s.vel * 0.6 + ((-dx * DRAG_SENSITIVITY) / dtt) * 0.4;
+      s.moved = Math.max(s.moved, Math.abs(e.clientX - s.startX));
+      s.lastX = e.clientX;
+      s.lastT = now;
+    };
 
-    if (s.moved < 6) {
-      // Treat as a click: focus the slab under the pointer.
-      const hit = (e.target as HTMLElement).closest<HTMLElement>('[data-index]');
-      if (hit) goTo(Number(hit.dataset.index));
-      return;
-    }
-    const projected = s.rot + s.vel * 0.22;
-    s.target = Math.round(projected / step) * step;
-  };
+    const onUp = (e: PointerEvent) => {
+      if (!s.dragging || e.pointerId !== s.pointerId) return;
+      s.dragging = false;
+      document.documentElement.classList.remove('is-dragging');
+      if (performance.now() - s.lastT > 80) s.vel = 0;
+      if (s.moved < 6) {
+        // A click on a side card brings it to the front.
+        const hit = downTarget instanceof Element ? downTarget.closest<HTMLElement>('[data-index]') : null;
+        if (hit) goTo(Number(hit.dataset.index));
+        else s.target = Math.round(s.rot / step) * step;
+        return;
+      }
+      // Flick inertia, capped at one room past where the finger was released.
+      const here = Math.round(s.rot / step);
+      const projected = Math.round((s.rot + s.vel * 0.22) / step);
+      s.target = Math.max(here - 1, Math.min(here + 1, projected)) * step;
+    };
 
-  const onPointerLeave = () => {
-    sim.current.aimX = 0;
-    sim.current.aimY = 0;
-  };
+    const onLeave = () => {
+      s.aimX = 0;
+      s.aimY = 0;
+    };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'ArrowRight') {
-      sim.current.target += step;
-      e.preventDefault();
-    } else if (e.key === 'ArrowLeft') {
-      sim.current.target -= step;
-      e.preventDefault();
-    }
-  };
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof Element && t.closest('input, textarea, select')) return;
+      if (e.key === 'ArrowRight') {
+        s.target = Math.round(s.target / step) * step + step;
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        s.target = Math.round(s.target / step) * step - step;
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    document.documentElement.addEventListener('pointerleave', onLeave);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      document.documentElement.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('keydown', onKey);
+      document.documentElement.classList.remove('is-dragging');
+    };
+  }, [goTo, step]);
 
   return (
     <div className="orbit">
@@ -237,15 +260,8 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         ref={stageRef}
         className="orbit-stage"
         role="listbox"
-        tabIndex={0}
         aria-label="Голосовые румы"
         aria-activedescendant={rooms[active] ? `room-${rooms[active].id}` : undefined}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onPointerLeave={onPointerLeave}
-        onKeyDown={onKeyDown}
       >
         <div ref={sceneRef} className="orbit-scene">
           {rooms.map((room, i) => {
@@ -258,7 +274,7 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
                 ref={(el) => {
                   slabRefs.current[i] = el;
                 }}
-                className={`slab glass-pane ${i === active ? 'is-active' : ''}`}
+                className={`slab ${i === active ? 'is-active' : ''}`}
                 data-index={i}
                 role="option"
                 aria-selected={i === active}

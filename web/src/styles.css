@@ -41,59 +41,20 @@ button { font: inherit; color: inherit; }
   100% { transform: translate3d(-3vmax, -2vmax, 0) scale(0.96); }
 }
 
-/* ---------- Glass material ---------- */
-
-.glass {
-  position: relative;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035));
-  -webkit-backdrop-filter: blur(44px) saturate(180%);
-  backdrop-filter: blur(44px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    0 2px 6px rgba(0, 0, 0, 0.18),
-    0 40px 100px -30px rgba(0, 0, 0, 0.65);
-}
-/* Specular rim: bright top-left, fading out — the "liquid glass" edge. */
-.glass::before,
-.glass-pane::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08) 32%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.22));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  pointer-events: none;
-}
-
 /* ---------- Layout ---------- */
 
-.shell {
-  --w: clamp(180px, min(25vw, calc((100dvh - 320px) / 1.3)), 300px);
-  --h: calc(var(--w) * 1.3);
-  position: relative;
-  z-index: 1;
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 28px;
-}
+.app { overflow: hidden; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 
-.console {
-  width: min(1040px, 100%);
-  padding: 10px;
-  border-radius: 38px;
-  overflow: hidden;
-}
-
-.console-bar {
+.corner {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 22px 0;
+  padding: 26px 34px;
+  pointer-events: none;
 }
 .wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.022em; }
 .live {
@@ -108,22 +69,28 @@ button { font: inherit; color: inherit; }
 }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: #30d158; }
 
+.shell {
+  --w: clamp(190px, min(24vw, calc((100dvh - 300px) / 1.3)), 320px);
+  --h: calc(var(--w) * 1.3);
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 76px 0 44px;
+}
+.stage-wrap { width: 100%; }
+
 /* ---------- Orbit ---------- */
 
 .orbit-stage {
   position: relative;
-  height: calc(var(--h) + 76px);
+  height: calc(var(--h) + 60px);
   perspective: 1800px;
   perspective-origin: 50% 45%;
-  cursor: grab;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
-  outline: none;
-  border-radius: 28px;
 }
-.orbit-stage:active { cursor: grabbing; }
-.orbit-stage:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); }
 .orbit-scene { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
 
 .slab {
@@ -145,6 +112,20 @@ button { font: inherit; color: inherit; }
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     0 30px 60px -24px rgba(0, 0, 0, 0.6);
   will-change: transform, opacity;
+}
+
+/* Specular rim: bright top-left, fading out — the "liquid glass" edge. */
+.slab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08) 32%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.22));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
 }
 
 .slab-name {
@@ -190,6 +171,7 @@ button { font: inherit; color: inherit; }
 /* Page control */
 .pager { display: flex; justify-content: center; gap: 2px; padding: 0 0 18px; }
 .pager button {
+  cursor: pointer;
   display: grid;
   place-items: center;
   width: 22px;
@@ -210,38 +192,149 @@ button { font: inherit; color: inherit; }
 .pager button:hover span { background: var(--label-2); }
 .pager button:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 0; border-radius: 50%; }
 
-/* ---------- Primary action ---------- */
+/* ---------- Discord button ---------- */
 
-.enter {
-  display: block;
-  width: 100%;
-  height: 62px;
+@property --ring {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.cta { display: flex; justify-content: center; margin-top: 10px; }
+
+.discord {
+  position: relative;
+  isolation: isolate;
+  width: min(400px, calc(100vw - 48px));
+  height: 64px;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #f5f5f7;
-  color: #000;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.5s var(--spring);
+}
+
+/* Breathing blurple halo */
+.discord-halo {
+  position: absolute;
+  inset: -12px -8px;
+  z-index: -2;
+  border-radius: inherit;
+  background: radial-gradient(60% 80% at 50% 55%, rgba(88, 101, 242, 0.85), transparent 72%);
+  filter: blur(20px);
+  opacity: 0.42;
+  animation: halo 3.6s ease-in-out infinite;
+  transition: opacity 0.6s ease;
+}
+@keyframes halo { 50% { opacity: 0.72; transform: scale(1.05); } }
+
+/* Body */
+.discord-body {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: linear-gradient(180deg, #6c78f6 0%, #5865f2 52%, #4d5ae6 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 16px 36px -14px rgba(88, 101, 242, 0.9);
+  transition: filter 0.5s ease;
+}
+/* Periodic light sweep */
+.discord-shine { position: absolute; inset: 0; }
+.discord-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -50%;
+  width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: skewX(-18deg);
+  animation: shine 5s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+@keyframes shine { 0% { left: -50%; } 34%, 100% { left: 130%; } }
+
+/* Endless orbiting light on the rim */
+.discord-ring {
+  position: absolute;
+  inset: -1.5px;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--ring), transparent 0deg 210deg, rgba(190, 198, 255, 0.55) 290deg, #ffffff 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0.75;
+  animation: ring 4.8s linear infinite;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+@keyframes ring { to { --ring: 360deg; } }
+
+.discord-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  box-shadow: inset 0 1px 0 #fff, 0 10px 30px -12px rgba(0, 0, 0, 0.6);
-  transition: background 0.25s ease, transform 0.35s var(--spring);
+  letter-spacing: -0.01em;
 }
-.enter:hover { background: #ffffff; transform: scale(1.004); }
-.enter:active { transform: scale(0.985); }
-.enter:focus-visible { outline: 3px solid rgba(255, 255, 255, 0.45); outline-offset: 3px; }
+.discord-label { transition: text-shadow 0.5s ease; }
+
+/* Clyde: eyes are holes; a warm light behind them ignites on hover */
+.clyde {
+  width: 30px;
+  height: 23px;
+  overflow: visible;
+  transform-origin: 50% 70%;
+  transition: transform 0.7s var(--spring), filter 0.6s ease;
+}
+.clyde-body { fill: #fff; }
+.clyde-eyes { fill: #ffd76a; opacity: 0; }
+
+.discord:hover { transform: translateY(-2px); }
+.discord:hover .discord-halo { opacity: 1; animation-play-state: paused; }
+.discord:hover .discord-ring { opacity: 1; }
+.discord:hover .discord-body { filter: brightness(1.08) saturate(1.05); }
+.discord:hover .discord-label { text-shadow: 0 0 14px rgba(255, 255, 255, 0.45); }
+.discord:hover .clyde {
+  transform: translateY(-2px) rotate(-9deg) scale(1.1);
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 14px rgba(255, 215, 106, 0.55));
+}
+.discord:hover .clyde-eyes { animation: hope 1.2s ease-out forwards, glow 2.6s ease-in-out 1.2s infinite; }
+@keyframes hope {
+  0% { opacity: 0; }
+  10% { opacity: 0.85; }
+  18% { opacity: 0.1; }
+  32% { opacity: 1; }
+  40% { opacity: 0.35; }
+  58%, 100% { opacity: 1; }
+}
+@keyframes glow { 50% { opacity: 0.72; } }
+
+.discord:active { transform: translateY(0) scale(0.98); }
+.discord:focus-visible { outline: 3px solid rgba(255, 255, 255, 0.6); outline-offset: 5px; }
 
 /* ---------- Responsive ---------- */
 
 @media (max-width: 640px) {
-  .shell { --w: clamp(150px, min(54vw, calc((100dvh - 300px) / 1.3)), 230px); padding: 14px 12px; }
-  .console { padding: 8px; border-radius: 32px; }
-  .console-bar { padding: 12px 14px 0; }
-  .orbit-stage { height: calc(var(--h) + 60px); perspective: 1200px; }
-  .slab { top: 26px; border-radius: 24px; }
+  .shell { --w: clamp(160px, min(58vw, calc((100dvh - 280px) / 1.3)), 250px); padding: 64px 0 28px; }
+  .corner { padding: 18px 18px; }
+  .orbit-stage { height: calc(var(--h) + 48px); perspective: 1200px; }
+  .slab { top: 22px; border-radius: 24px; }
   .count span { font-size: 13px; }
-  .enter { height: 56px; font-size: 16px; }
+  .discord { height: 58px; }
+  .discord-content { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
