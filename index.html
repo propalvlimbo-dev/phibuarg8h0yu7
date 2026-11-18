@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070b18" />
+    <meta name="description" content="GirlScan — приватная карта твоего комьюнити." />
+    <title>GirlScan — your community, in focus</title>
+    <link rel="preload" as="image" href="/public/girlscan-avatar.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <div class="aurora aurora-one"></div>
+      <div class="aurora aurora-two"></div>
+      <div class="grain"></div>
+
+      <nav class="nav" aria-label="Главная навигация">
+        <a class="brand" href="#top" aria-label="GirlScan — главная">
+          <span class="brand-mark"><img src="/public/girlscan-avatar.png" alt="" /></span>
+          <span>Girl<span>Scan</span></span>
+        </a>
+        <div class="nav-center">
+          <a href="#how">Как это работает</a>
+          <a href="#privacy">Приватность</a>
+        </div>
+        <button class="login" type="button">Войти <span>↗</span></button>
+      </nav>
+
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <div class="eyebrow"><i></i> PRIVATE COMMUNITY RADAR</div>
+          <h1>Своё комьюнити.<br /><em>В фокусе.</em></h1>
+          <p>
+            Приватное пространство, чтобы быть ближе к своим.<br />
+            Только с согласием. Только для участников.
+          </p>
+          <div class="cta-row">
+            <button class="primary" type="button" id="openModal">Открыть GirlScan <span>→</span></button>
+            <button class="play-button" type="button" aria-label="Узнать, как работает GirlScan"><b>▶</b> Как это работает</button>
+          </div>
+          <div class="trust-line">
+            <span class="avatars"><b>A</b><b>M</b><b>J</b><b>+</b></span>
+            <span>Создано для закрытых комьюнити</span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbit orbit-a"></div>
+          <div class="orbit orbit-b"></div>
+          <div class="orbit orbit-c"></div>
+          <div class="star star-a"></div><div class="star star-b"></div><div class="star star-c"></div>
+          <div class="scan-beam"></div>
+          <div class="avatar-halo"></div>
+          <div class="avatar-wrap"><img src="/public/girlscan-avatar.png" alt="" /></div>
+          <div class="floating-card card-one"><span class="status-dot"></span><div><strong>Private mode</strong><small>Только по согласию</small></div></div>
+          <div class="floating-card card-two"><span class="shield">✦</span><div><strong>Zero tracking</strong><small>Твои данные — твои</small></div></div>
+          <div class="ring-label label-one">SAFE SPACE</div>
+          <div class="ring-label label-two">OPT-IN ONLY</div>
+        </div>
+      </section>
+
+      <footer>
+        <span>© 2026 GIRLSCAN</span>
+        <div><a href="#privacy">Privacy first</a><span class="footer-dot"></span><a href="#rules">Правила</a></div>
+        <span class="online"><i></i> Сервис скоро откроется</span>
+      </footer>
+    </main>
+
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" type="button" id="closeModal" aria-label="Закрыть">×</button>
+        <div class="modal-icon">✦</div>
+        <h2 id="modalTitle">GirlScan скоро здесь</h2>
+        <p>Оставь почту — пришлём приглашение в закрытую бету.</p>
+        <form id="waitlistForm">
+          <input type="email" placeholder="you@email.com" aria-label="Email" required />
+          <button type="submit">Хочу в бету</button>
+        </form>
+        <small id="formMessage">Никакого спама. Только приглашение.</small>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
