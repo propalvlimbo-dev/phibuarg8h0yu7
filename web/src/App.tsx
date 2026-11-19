@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import Background from './components/Background';
 import DiscordButton from './components/DiscordButton';
+import { LensGlyph } from './components/Logo';
 import RoomOrbit from './components/RoomOrbit';
 import { useRooms } from './rooms';
 import './styles.css';
@@ -40,7 +41,10 @@ export default function App() {
       <Background />
 
       <motion.header className="corner" {...appear(0.05)}>
-        <span className="wordmark">GirlScan</span>
+        <span className="wordmark">
+          <LensGlyph className="wordmark-mark" />
+          GirlScan
+        </span>
       </motion.header>
 
       <div className="shell">
