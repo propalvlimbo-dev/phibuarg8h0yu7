@@ -1,24 +1,29 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { logout, useMe } from '../api';
 import type { Me } from '../api';
+import { useBoardRooms } from '../board';
+import type { BoardRoom } from '../board';
 import { LensGlyph } from '../components/Logo';
 import { ServerIcon } from '../components/ServerCard';
-import ServerModal from '../components/ServerModal';
+import { ROOM_FILTERS } from '../filters';
 import { linkTo, navigate } from '../router';
 import { useServers } from '../servers';
-import type { Server } from '../servers';
+import type { Member, Server } from '../servers';
 
 type Section = { path: string; label: string };
 
 const SECTIONS: Section[] = [
-  { path: '/cabinet/servers', label: 'Серверы' },
+  { path: '/cabinet', label: 'Комнаты' },
   { path: '/cabinet/subscription', label: 'Подписка' },
-  { path: '/cabinet/settings', label: 'Настройки' },
 ];
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+/** Rooms rendered per step; more are added as you scroll, so thousands of rooms stay smooth. */
+const PAGE = 60;
+/** Members shown per room card before "+N". */
+const MAX_MEMBERS = 6;
 
 function plural(n: number, one: string, few: string, many: string) {
   const m10 = n % 10;
@@ -28,17 +33,21 @@ function plural(n: number, one: string, few: string, many: string) {
   return many;
 }
 
-/** Personal account shell: sidebar navigation + one section at a time. */
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function initial(name: string) {
+  const ch = [...name].find((c) => /[\p{L}\p{N}]/u.test(c));
+  return ch ? ch.toUpperCase() : '•';
+}
+
+/** Personal account: top bar + one section. No side panels. */
 export default function Cabinet({ path }: { path: string }) {
   const { state, reload } = useMe();
-  const servers = useServers();
 
-  // Not logged in → back to the main page (where the Discord button is).
   useEffect(() => {
     if (state.status === 'guest') navigate('/', { replace: true });
   }, [state.status]);
 
-  // /cabinet (and unknown sub-paths) open the first section.
   const known = SECTIONS.some((s) => s.path === path);
   useEffect(() => {
     if (!known) navigate(SECTIONS[0].path, { replace: true });
@@ -70,18 +79,18 @@ export default function Cabinet({ path }: { path: string }) {
 
   return (
     <main className="cab">
-      <motion.aside
-        className="glass cab-side"
-        initial={{ opacity: 0, x: -16, filter: 'blur(8px)' }}
-        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-        transition={{ duration: 0.7, ease: EASE }}
+      <motion.header
+        className="glass cab-top"
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.6, ease: EASE }}
       >
         <a href="/" className="wordmark cab-brand" onClick={linkTo('/')}>
           <LensGlyph className="wordmark-mark" />
           GirlScan
         </a>
 
-        <nav className="cab-nav" aria-label="Личный кабинет">
+        <nav className="cab-tabs" aria-label="Личный кабинет">
           {SECTIONS.map((s) => (
             <a
               key={s.path}
@@ -96,26 +105,25 @@ export default function Cabinet({ path }: { path: string }) {
         </nav>
 
         <div className="cab-user">
-          <Avatar me={me} className="cab-avatar" size={32} />
+          <Avatar me={me} className="cab-avatar" size={30} />
           <span className="cab-user-name">{me.user.displayName}</span>
           <button type="button" className="cab-logout" onClick={() => void onLogout()}>
             Выйти
           </button>
         </div>
-      </motion.aside>
+      </motion.header>
+
+      {demo && <p className="cab-demo">Демо-режим: API не запущен, показаны тестовые данные</p>}
 
       <motion.section
         key={section.path}
         className="cab-main"
-        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.6, ease: EASE }}
       >
-        {demo && <p className="cab-demo">Демо-режим: Go API не запущен, показаны тестовые данные</p>}
-        <h1 className="cab-title">{section.label}</h1>
-        {section.path === '/cabinet/servers' && <Servers servers={servers} subscribed={me.subscription.active} />}
+        {section.path === '/cabinet' && <Board subscribed={me.subscription.active} />}
         {section.path === '/cabinet/subscription' && <Subscription me={me} />}
-        {section.path === '/cabinet/settings' && <Settings />}
       </motion.section>
     </main>
   );
@@ -127,15 +135,34 @@ function Avatar({ me, className, size }: { me: Me; className: string; size: numb
   if (failed || !me.user.avatarUrl) {
     return (
       <span className={`${className} cab-avatar-letter`} style={{ fontSize: size * 0.42 }} aria-hidden="true">
-        {(me.user.displayName || me.user.username).slice(0, 1).toUpperCase()}
+        {initial(me.user.displayName || me.user.username)}
       </span>
     );
   }
   return <img className={className} src={me.user.avatarUrl} alt="" width={size} height={size} onError={() => setFailed(true)} />;
 }
 
-function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`glass cab-panel ${className}`}>{children}</div>;
+// ---------------------------------------------------------------- Board
+
+/** Filters live in the URL (?server=…&f=…&q=…) so a reload or a shared link keeps them. */
+function readParams() {
+  const p = new URLSearchParams(location.search);
+  return { server: p.get('server') ?? '', filter: p.get('f') ?? 'all', query: p.get('q') ?? '' };
+}
+
+function useBoardParams() {
+  const [params, setParams] = useState(readParams);
+  useEffect(() => {
+    const p = new URLSearchParams(location.search);
+    const set = (key: string, value: string, fallback: string) => (value && value !== fallback ? p.set(key, value) : p.delete(key));
+    set('server', params.server, '');
+    set('f', params.filter, 'all');
+    set('q', params.query.trim(), '');
+    const qs = p.toString();
+    const next = location.pathname + (qs ? `?${qs}` : '');
+    if (next !== location.pathname + location.search) history.replaceState(null, '', next);
+  }, [params]);
+  return [params, setParams] as const;
 }
 
 const LockIcon = () => (
@@ -145,22 +172,114 @@ const LockIcon = () => (
   </svg>
 );
 
-/** Server icons; a click opens the server sheet. Without a subscription everything is blurred and inert. */
-function Servers({ servers, subscribed }: { servers: Server[]; subscribed: boolean }) {
-  const [open, setOpen] = useState<Server | null>(null);
+const SearchIcon = () => (
+  <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+    <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    <path d="m13 13 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+function matches(room: BoardRoom, q: string) {
+  if (!q) return true;
+  if (room.name.toLowerCase().includes(q) || room.server.name.toLowerCase().includes(q)) return true;
+  return room.members.some((m) => m.name.toLowerCase().includes(q));
+}
+
+function Board({ subscribed }: { subscribed: boolean }) {
+  const servers = useServers();
+  const rooms = useBoardRooms(servers);
+  const [params, setParams] = useBoardParams();
+  const query = useDeferredValue(params.query.trim().toLowerCase());
+
+  const filter = ROOM_FILTERS.find((f) => f.id === params.filter) ?? ROOM_FILTERS[0];
+  const serverId = servers.some((s) => s.id === params.server) ? params.server : '';
+
+  // Rooms matching the search; counters for the server chips and filter tabs are derived from here.
+  const searched = useMemo(() => rooms.filter((r) => matches(r, query)), [rooms, query]);
+
+  const filterCounts = useMemo(() => {
+    const pool = serverId ? searched.filter((r) => r.server.id === serverId) : searched;
+    return Object.fromEntries(ROOM_FILTERS.map((f) => [f.id, pool.reduce((n, r) => n + (f.test(r) ? 1 : 0), 0)]));
+  }, [searched, serverId]);
+
+  const serverCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of searched) if (filter.test(r)) counts.set(r.server.id, (counts.get(r.server.id) ?? 0) + 1);
+    return counts;
+  }, [searched, filter]);
+
+  const visible = useMemo(() => {
+    const list = searched.filter((r) => (!serverId || r.server.id === serverId) && filter.test(r));
+    // "Дамы": rooms with more girls first.
+    if (filter.id === 'ladies') list.sort((a, b) => b.ladies - a.ladies || b.members.length - a.members.length || a.order - b.order);
+    return list;
+  }, [searched, serverId, filter]);
+
+  const totalCount = useMemo(() => [...serverCounts.values()].reduce((a, b) => a + b, 0), [serverCounts]);
+
+  // Incremental rendering.
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [serverId, filter.id, query]);
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || limit >= visible.length) return;
+    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && setLimit((l) => l + PAGE), { rootMargin: '1200px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [limit, visible.length]);
+
+  const update = (patch: Partial<typeof params>) => setParams((p) => ({ ...p, ...patch }));
+  const people = useMemo(() => visible.reduce((n, r) => n + r.members.length, 0), [visible]);
 
   return (
-    <div className={`cab-srv-wrap ${subscribed ? '' : 'is-locked'}`}>
-      <div className="cab-srv-grid" aria-hidden={!subscribed || undefined} inert={!subscribed}>
-        {servers.map((server) => (
-          <button key={server.id} type="button" className="glass cab-srv" onClick={() => setOpen(server)}>
-            <ServerIcon server={server} className="srv-icon-lg" />
-            <span className="cab-srv-name">{server.name}</span>
-            <span className="cab-srv-meta">
-              {server.roomCount} {plural(server.roomCount, 'комната', 'комнаты', 'комнат')}
-            </span>
-          </button>
-        ))}
+    <div className={`board ${subscribed ? '' : 'is-locked'}`}>
+      <div className="board-body" aria-hidden={!subscribed || undefined} inert={!subscribed}>
+        <div className="board-tools">
+          <div className="board-servers" role="toolbar" aria-label="Серверы">
+            <ServerChip label="Все серверы" count={totalCount} active={!serverId} onClick={() => update({ server: '' })} />
+            {servers.map((s) => (
+              <ServerChip key={s.id} server={s} label={s.name} count={serverCounts.get(s.id) ?? 0} active={serverId === s.id} onClick={() => update({ server: serverId === s.id ? '' : s.id })} />
+            ))}
+          </div>
+
+          <div className="board-row">
+            <div className="board-filters" role="tablist" aria-label="Фильтр">
+              {ROOM_FILTERS.map((f) => (
+                <button key={f.id} type="button" role="tab" aria-selected={filter.id === f.id} className={filter.id === f.id ? 'is-active' : ''} onClick={() => update({ filter: f.id })}>
+                  <span className={f.short ? 'label-long' : undefined}>{f.label}</span>
+                  {f.short && <span className="label-short">{f.short}</span>}
+                  <span className="board-count">{filterCounts[f.id] ?? 0}</span>
+                </button>
+              ))}
+            </div>
+
+            <label className="board-search">
+              <SearchIcon />
+              <input type="search" placeholder="Ник, комната или сервер" value={params.query} onChange={(e) => update({ query: e.target.value })} aria-label="Поиск" />
+            </label>
+          </div>
+        </div>
+
+        <p className="board-summary">
+          {visible.length} {plural(visible.length, 'комната', 'комнаты', 'комнат')} · {people} в голосе
+        </p>
+
+        {visible.length ? (
+          <div className="board-grid">
+            {visible.slice(0, limit).map((room) => (
+              <RoomTile key={room.id} room={room} />
+            ))}
+          </div>
+        ) : (
+          <div className="board-empty">
+            <p>Ничего не найдено</p>
+            <button type="button" className="cab-logout" onClick={() => setParams({ server: '', filter: 'all', query: '' })}>
+              Сбросить фильтры
+            </button>
+          </div>
+        )}
+        {limit < visible.length && <div ref={sentinel} className="board-sentinel" aria-hidden="true" />}
       </div>
 
       {!subscribed && (
@@ -176,10 +295,101 @@ function Servers({ servers, subscribed }: { servers: Server[]; subscribed: boole
           </div>
         </div>
       )}
-
-      <AnimatePresence>{open && subscribed && <ServerModal key={open.id} server={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </div>
   );
+}
+
+function ServerChip({ server, label, count, active, onClick }: { server?: Server; label: string; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={`board-chip ${active ? 'is-active' : ''}`} aria-pressed={active} onClick={onClick}>
+      {server && <ServerIcon server={server} className="srv-icon-xs" />}
+      <span className="board-chip-name">{label}</span>
+      <span className="board-count">{count}</span>
+    </button>
+  );
+}
+
+const SpeakerIcon = () => (
+  <svg className="vc-speaker" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M11.4 4.3 6.9 8H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.9l4.5 3.7a.6.6 0 0 0 1-.5V4.8a.6.6 0 0 0-1-.5Z" fill="currentColor" />
+    <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const MicOff = () => (
+  <svg viewBox="0 0 24 24" aria-label="Микрофон выключен" role="img">
+    <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor" />
+    <path d="M6 11a6 6 0 0 0 12 0M12 17v3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M4.5 4.5 19.5 19.5" stroke="#f23f43" strokeWidth="2.2" strokeLinecap="round" />
+  </svg>
+);
+
+function BoardMember({ m }: { m: Member }) {
+  return (
+    <li className={`vc-member ${m.lady ? 'is-lady' : ''}`} style={{ '--hue': m.hue } as CSSProperties}>
+      <span className="vc-av" aria-hidden="true">
+        {m.avatarUrl ? <img src={m.avatarUrl} alt="" loading="lazy" /> : initial(m.name)}
+      </span>
+      <span className="vc-nick">{m.name}</span>
+      {m.muted && (
+        <span className="vc-state">
+          <MicOff />
+        </span>
+      )}
+    </li>
+  );
+}
+
+/** One voice room on the board, Discord-style. Memoised: filtering re-renders only what changed. */
+const RoomTile = memo(function RoomTile({ room }: { room: BoardRoom }) {
+  const shown = room.members.slice(0, MAX_MEMBERS);
+  const more = room.members.length - shown.length;
+  const inVoice = room.members.length;
+  const href = room.server.guildId ? `https://discord.com/channels/${room.server.guildId}` : undefined;
+
+  return (
+    <article className="room">
+      <header className="room-head">
+        <ServerIcon server={room.server} className="srv-icon-xs" />
+        <span className="room-server">{room.server.name}</span>
+        {room.ladies > 0 && <span className="room-ladies">{room.ladies} {plural(room.ladies, 'дама', 'дамы', 'дам')}</span>}
+      </header>
+      <div className="vc-channel">
+        <SpeakerIcon />
+        {room.emoji && <span className="vc-emoji">{room.emoji}</span>}
+        <span className="vc-title">{room.name}</span>
+        {room.limit ? (
+          <span className="vc-limit" aria-label={`${inVoice} из ${room.limit}`}>
+            <b>{pad(inVoice)}</b>
+            <i>{pad(room.limit)}</i>
+          </span>
+        ) : (
+          <span className="vc-limit" aria-label={`${inVoice} в голосе`}>
+            <b>{pad(inVoice)}</b>
+          </span>
+        )}
+      </div>
+      <ul className="vc-members">
+        {shown.map((m) => (
+          <BoardMember key={m.id} m={m} />
+        ))}
+      </ul>
+      <footer className="room-foot">
+        {more > 0 ? <span>ещё {more}</span> : <span />}
+        {href && (
+          <a className="room-open" href={href} target="_blank" rel="noreferrer">
+            Открыть в Discord
+          </a>
+        )}
+      </footer>
+    </article>
+  );
+});
+
+// ---------------------------------------------------------------- Subscription
+
+function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`glass cab-panel ${className}`}>{children}</div>;
 }
 
 function Subscription({ me }: { me: Me }) {
@@ -191,8 +401,8 @@ function Subscription({ me }: { me: Me }) {
           <p className="cab-value">Полный доступ</p>
           <p className="cab-muted">Активна</p>
           <ul className="cab-list">
-            <li>Все серверы</li>
-            <li>Поиск по каждому серверу</li>
+            <li>Все комнаты всех серверов</li>
+            <li>Фильтры и поиск</li>
           </ul>
         </Panel>
       </div>
@@ -211,21 +421,13 @@ function Subscription({ me }: { me: Me }) {
         <p className="cab-label">Полный доступ</p>
         <p className="cab-value">Скоро</p>
         <ul className="cab-list">
-          <li>Все серверы</li>
-          <li>Поиск по каждому серверу</li>
+          <li>Все комнаты всех серверов</li>
+          <li>Фильтры и поиск</li>
         </ul>
         <button type="button" className="cab-btn" disabled>
           Оформить
         </button>
       </Panel>
     </div>
-  );
-}
-
-function Settings() {
-  return (
-    <Panel>
-      <p className="cab-muted">Настройки появятся позже.</p>
-    </Panel>
   );
 }

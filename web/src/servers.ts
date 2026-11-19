@@ -10,6 +10,8 @@ export type Member = {
   deafened?: boolean;
   /** Shows the green "speaking" ring from time to time. */
   talks?: boolean;
+  /** Has the server's "girl" role (from the bot). Highlighted and used by the cabinet filters. */
+  lady?: boolean;
 };
 
 export type VoiceRoom = {
@@ -26,6 +28,8 @@ const discordIcon = (guildId: string, hash: string, size = 128) =>
 
 export type Server = {
   id: string;
+  /** Discord guild id (for links); placeholders use the real ids of the preview servers. */
+  guildId?: string;
   name: string;
   hue: number;
   iconUrl?: string;
@@ -38,6 +42,7 @@ export type Server = {
 export const previewServers: Server[] = [
   {
     id: 'xivivide',
+    guildId: '1239260433551200276',
     name: 'Xivivide',
     hue: 352,
     iconUrl: discordIcon('1239260433551200276', 'a_22dec9f014cefe6ec09b03fc315f5d25'),
@@ -50,16 +55,17 @@ export const previewServers: Server[] = [
         limit: 20,
         members: [
           { id: 'x1', name: '! Сижу в войсе пока не пишу', hue: 20, talks: true },
-          { id: 'x2', name: '#moonlight', hue: 300, muted: true },
+          { id: 'x2', name: '#moonlight', hue: 300, muted: true, lady: true },
           { id: 'x3', name: 'ᴍᴀʀʟᴏ ꜱᴛᴀʀᴋ', hue: 220, talks: true },
-          { id: 'x4', name: 'Неповторимый вечер', hue: 160 },
-          { id: 'x5', name: 'кефирчик', hue: 270, talks: true },
+          { id: 'x4', name: 'Неповторимый вечер', hue: 160, lady: true },
+          { id: 'x5', name: 'кефирчик', hue: 270, talks: true, lady: true },
         ],
       },
     ],
   },
   {
     id: 'elysium',
+    guildId: '856646640329031721',
     name: 'Elysium',
     hue: 42,
     iconUrl: discordIcon('856646640329031721', 'a_70de26123bf3d4ce31b6748bbcd3414b'),
@@ -71,15 +77,16 @@ export const previewServers: Server[] = [
         emoji: '🌕',
         limit: 99,
         members: [
-          { id: 'e1', name: '! В войсе, не пишу', hue: 330, talks: true },
+          { id: 'e1', name: '! В войсе, не пишу', hue: 330, talks: true, lady: true },
           { id: 'e2', name: 'ʀᴏɴɪɴ ᴅᴜꜱᴋ', hue: 200, talks: true },
-          { id: 'e3', name: 'Pixel 🦋', hue: 190, muted: true, deafened: true },
+          { id: 'e3', name: 'Pixel 🦋', hue: 190, muted: true, deafened: true, lady: true },
         ],
       },
     ],
   },
   {
     id: 'lounge',
+    guildId: '254958490676625408',
     name: 'Lounge',
     hue: 250,
     iconUrl: discordIcon('254958490676625408', 'a_5a440bf390ab640719fd3729b10eb708'),
@@ -93,8 +100,8 @@ export const previewServers: Server[] = [
         members: [
           { id: 'l1', name: 'ночной гость', hue: 210, talks: true },
           { id: 'l2', name: '! afk 5 мин', hue: 30, muted: true },
-          { id: 'l3', name: 'ᴠᴇʟᴠᴇᴛ', hue: 280, talks: true },
-          { id: 'l4', name: 'Сова 🦉', hue: 120 },
+          { id: 'l3', name: 'ᴠᴇʟᴠᴇᴛ', hue: 280, talks: true, lady: true },
+          { id: 'l4', name: 'Сова 🦉', hue: 120, lady: true },
         ],
       },
     ],
