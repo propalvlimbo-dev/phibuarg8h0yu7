@@ -23,9 +23,19 @@ type roomsResponse struct {
 }
 
 func main() {
+	cfg := loadConfig()
+	a := newAuth(cfg)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.HandleFunc("GET /api/rooms", roomsHandler)
+
+	// Discord OAuth2 + session (see auth.go).
+	mux.HandleFunc("GET /api/auth/status", a.status)
+	mux.HandleFunc("GET /api/auth/login", a.login)
+	mux.HandleFunc("GET /api/auth/callback", a.callback)
+	mux.HandleFunc("POST /api/auth/logout", a.logout)
+	mux.HandleFunc("GET /api/me", a.me)
 	mux.Handle("/", spaHandler(os.Getenv("STATIC_DIR")))
 
 	server := &http.Server{
@@ -102,12 +112,16 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
 		w.Header().Set("Content-Security-Policy", strings.Join([]string{
 			"default-src 'self'",
 			"base-uri 'none'",
 			"frame-ancestors 'none'",
 			"form-action 'self'",
-			"img-src 'self' data:",
+			// Discord avatars and server icons.
+			"img-src 'self' data: https://cdn.discordapp.com https://media.discordapp.net",
 			"style-src 'self' 'unsafe-inline'",
 			"script-src 'self'",
 			"connect-src 'self'",

@@ -92,7 +92,7 @@ function ServerIcon({ server }: { server: Server }) {
 }
 
 /** Discord-style card: server header, its first (public) voice room and who is in it. */
-export default function ServerCard({ server }: { server: Server }) {
+export default function ServerCard({ server, showFoot = true }: { server: Server; showFoot?: boolean }) {
   const room = server.rooms[0];
   const hidden = Math.max(0, server.roomCount - 1);
   const inVoice = room?.members.length ?? 0;
@@ -125,7 +125,7 @@ export default function ServerCard({ server }: { server: Server }) {
         </section>
       )}
 
-      {hidden > 0 && (
+      {showFoot && hidden > 0 && (
         <footer className="srv-foot">
           ещё {hidden} {plural(hidden, 'комната', 'комнаты', 'комнат')} в личном кабинете
         </footer>

@@ -3,6 +3,11 @@ services:
     build: .
     ports:
       - "8080:8080"
+    # Discord OAuth + session secret (see .env.example). On a server set
+    # DISCORD_REDIRECT_URI=https://<your-domain>/api/auth/callback and add it in the Developer Portal.
+    env_file:
+      - path: .env
+        required: false
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

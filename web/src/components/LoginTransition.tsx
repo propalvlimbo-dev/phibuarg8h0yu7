@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Transition } from 'framer-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Logo3D from './Logo3D';
 
 type Phase = 'enter' | 'loading' | 'leave';
@@ -12,6 +12,11 @@ type Props = {
   getReturnRect: () => DOMRect | null;
   /** Called once the cancel animation has finished and the overlay can unmount. */
   onClosed: () => void;
+  /**
+   * Runs when the loading spin starts. It either navigates away (success) or resolves with a message,
+   * which is shown under the logo before the logo flies back to the button.
+   */
+  run?: () => Promise<string | void>;
 };
 
 const BIG = 112; // final logo width, px
@@ -24,10 +29,10 @@ const ARC_OUT: Bezier = [0.5, 0, 0.75, 0.4];
 /**
  * Login transition: the Discord logo leaves the button, flies to the middle of the screen
  * over a glass veil, grows and starts the loading spin. Esc or a click cancels and flies it back.
- * TODO(auth): when the OAuth redirect is wired, navigate to it from the 'loading' phase.
  */
-export default function LoginTransition({ from, getReturnRect, onClosed }: Props) {
+export default function LoginTransition({ from, getReturnRect, onClosed, run }: Props) {
   const [phase, setPhase] = useState<Phase>('enter');
+  const [message, setMessage] = useState<string | null>(null);
   const [center] = useState(() => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 - 28 }));
 
   const offsetTo = useCallback(
@@ -43,6 +48,22 @@ export default function LoginTransition({ from, getReturnRect, onClosed }: Props
     setTarget(back ? offsetTo(back) : start);
     setPhase('leave');
   }, [phase, getReturnRect, offsetTo, start]);
+  const cancelRef = useRef(cancel);
+  cancelRef.current = cancel;
+
+  // Start the actual login once the logo has arrived and started spinning.
+  const started = useRef(false);
+  const errorTimer = useRef(0);
+  useEffect(() => {
+    if (phase !== 'loading' || started.current || !run) return;
+    started.current = true;
+    void run().then((msg) => {
+      if (!msg) return;
+      setMessage(msg);
+      errorTimer.current = window.setTimeout(() => cancelRef.current(), 2600);
+    });
+  }, [phase, run]);
+  useEffect(() => () => window.clearTimeout(errorTimer.current), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -93,10 +114,10 @@ export default function LoginTransition({ from, getReturnRect, onClosed }: Props
               exit={{ opacity: 0, y: 4, filter: 'blur(4px)', transition: { duration: 0.3 } }}
               transition={{ duration: 0.6, ease: EASE_OUT }}
             >
-              <span className="login-bar">
+              <span className={`login-bar ${message ? 'is-stopped' : ''}`}>
                 <i />
               </span>
-              <span className="login-caption">Подключаемся к Discord</span>
+              <span className={`login-caption ${message ? 'is-error' : ''}`}>{message ?? 'Подключаемся к Discord'}</span>
             </motion.div>
           )}
         </AnimatePresence>
