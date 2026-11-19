@@ -256,10 +256,13 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   initial-value: 0deg;
 }
 .logo3d-stage {
+  --s: 30px;
   position: relative;
-  width: 30px;
-  height: 24px;
-  perspective: 120px;
+  display: block;
+  flex: none;
+  width: var(--s);
+  height: calc(var(--s) * 0.8);
+  perspective: calc(var(--s) * 4);
 }
 .logo3d {
   --a: 0deg;
@@ -270,8 +273,8 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   transform: rotateX(calc(sin(var(--a) / 2) * -16deg)) rotateY(var(--a));
 }
 .logo3d-face { position: absolute; inset: 0; transform-style: preserve-3d; }
-.face-clyde { inset: 0.5px 0; }
-.face-lens { inset: -2px 2px; transform: rotateY(180deg); }
+.face-clyde { inset: 2.1% 0; }
+.face-lens { inset: -8.3% 6.7%; transform: rotateY(180deg); }
 .logo3d-slice {
   position: absolute;
   inset: 0;
@@ -290,12 +293,12 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 .face-lens .logo3d-slice { opacity: clamp(0, calc(0.5 - cos(var(--a)) * 400), 1); }
 .logo3d-edge {
   position: absolute;
-  top: 0.5px;
-  bottom: -1px;
+  top: 2.1%;
+  bottom: -4.2%;
   left: 50%;
-  width: 5.2px;
-  margin-left: -2.6px;
-  border-radius: 2.6px;
+  width: calc(var(--depth) * 1.15);
+  margin-left: calc(var(--depth) * -0.575);
+  border-radius: calc(var(--depth) * 0.575);
   background: linear-gradient(180deg, #d3d8ff, #aeb6ff 55%, #9aa3fb);
   transform: rotateY(90deg);
   /* Only near edge-on (|sin| close to 1). */
@@ -308,6 +311,59 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   from { --a: 0deg; }
   to { --a: 360deg; }
 }
+
+/* Loading spin (login transition): smooth turn, short rest, repeat. */
+.logo3d.is-looping { animation: logo-loop 1.8s infinite; }
+@keyframes logo-loop {
+  0% { --a: 0deg; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  78%, 100% { --a: 360deg; }
+}
+
+/* ---------- Login transition ---------- */
+.login-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: radial-gradient(circle at 50% 46%, rgba(20, 22, 40, 0.55), rgba(5, 6, 10, 0.82) 70%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+.login-logo {
+  position: fixed;
+  z-index: 41;
+  pointer-events: none;
+  will-change: transform;
+}
+.login-loader {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 41;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.login-loader-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.login-bar {
+  position: relative;
+  width: 168px;
+  height: 3px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+.login-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(185, 192, 255, 0), #c9ceff 50%, rgba(185, 192, 255, 0));
+  animation: login-bar 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes login-bar { to { left: 100%; } }
+.login-caption { font-size: 13px; font-weight: 500; color: var(--label-3); }
 
 .discord:hover .discord-body {
   filter: brightness(1.1);

@@ -1,13 +1,12 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Background from './components/Background';
 import DiscordButton from './components/DiscordButton';
 import { LensGlyph } from './components/Logo';
+import LoginTransition from './components/LoginTransition';
 import RoomOrbit from './components/RoomOrbit';
 import { useRooms } from './rooms';
 import './styles.css';
-
-const inviteUrl = import.meta.env.VITE_DISCORD_INVITE as string | undefined;
 
 export default function App() {
   const [revealed, setRevealed] = useState(false);
@@ -21,9 +20,9 @@ export default function App() {
 
   const current = rooms[active];
 
-  const enter = () => {
-    if (inviteUrl) window.location.assign(inviteUrl);
-  };
+  // Login: for now only the transition (logo → centre → loading). The Discord OAuth redirect comes later.
+  const [loginFrom, setLoginFrom] = useState<DOMRect | null>(null);
+  const buttonLogo = useRef<HTMLSpanElement | null>(null);
 
   const appear = (delay: number) => ({
     initial: { opacity: 0, y: 18, filter: 'blur(10px)' },
@@ -53,9 +52,23 @@ export default function App() {
         </motion.div>
 
         <motion.div className="cta" {...appear(0.25)}>
-          <DiscordButton label="Войти через Discord" ariaLabel={current ? `Войти в ${current.name} через Discord` : undefined} onClick={enter} />
+          <DiscordButton
+            label="Войти через Discord"
+            ariaLabel={current ? `Войти в ${current.name} через Discord` : undefined}
+            onClick={setLoginFrom}
+            logoHidden={loginFrom !== null}
+            logoRef={buttonLogo}
+          />
         </motion.div>
       </div>
+
+      {loginFrom && (
+        <LoginTransition
+          from={loginFrom}
+          getReturnRect={() => buttonLogo.current?.getBoundingClientRect() ?? null}
+          onClosed={() => setLoginFrom(null)}
+        />
+      )}
 
       <p className="sr-only" aria-live="polite">
         {current ? `${current.name}: ${current.members} в эфире` : ''}
