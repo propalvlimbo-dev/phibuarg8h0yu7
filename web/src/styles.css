@@ -70,8 +70,8 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 .wordmark { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; letter-spacing: -0.022em; }
 
 .shell {
-  --w: clamp(190px, min(24vw, calc((100dvh - 300px) / 1.3)), 320px);
-  --h: calc(var(--w) * 1.3);
+  --w: clamp(270px, 26vw, 340px);
+  --h: clamp(300px, calc(100dvh - 330px), 372px);
   position: relative;
   z-index: 1;
   min-height: 100dvh;
@@ -99,12 +99,13 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   left: 50%;
   top: 34px;
   width: var(--w);
-  height: var(--h);
+  max-height: var(--h);
   margin-left: calc(var(--w) / -2);
   display: flex;
   flex-direction: column;
-  padding: calc(var(--w) * 0.085);
-  border-radius: 30px;
+  padding: 18px 16px 16px;
+  border-radius: 26px;
+  overflow: hidden;
   background:
     radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
     linear-gradient(165deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.025));
@@ -128,45 +129,122 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   pointer-events: none;
 }
 
-.slab-name {
-  margin: 0;
-  font-size: calc(var(--w) * 0.095);
-  line-height: 1.1;
-  font-weight: 600;
-  letter-spacing: -0.026em;
-  color: var(--label);
+/* ---------- Server card (Discord-style voice room) ---------- */
+.srv-head { display: flex; align-items: center; gap: 11px; padding: 0 4px 14px; }
+.srv-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(145deg, hsl(var(--hue) 70% 62%), hsl(calc(var(--hue) + 28) 62% 42%));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
 }
+.srv-icon img { width: 100%; height: 100%; object-fit: cover; }
+.srv-name { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -0.02em; color: var(--label); }
 
-.voice {
-  flex: 1;
+.vc {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+.vc-channel {
   display: flex;
   align-items: center;
-  gap: calc(var(--w) * 0.012);
-  min-height: 0;
-  margin: calc(var(--w) * 0.05) 0;
-}
-.voice i {
-  flex: 1;
-  height: 46%;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
-  transform: scaleY(var(--lo));
-  animation: voice var(--dur) ease-in-out var(--delay) infinite alternate;
-}
-.slab:not(.is-active) .voice i { animation-play-state: paused; background: rgba(255, 255, 255, 0.5); }
-@keyframes voice { to { transform: scaleY(var(--hi)); } }
-
-.slab-foot { display: grid; gap: calc(var(--w) * 0.05); }
-.count { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-.count b {
-  font-size: calc(var(--w) * 0.19);
-  line-height: 0.95;
+  gap: 7px;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.045em;
+  color: #f2f3f5;
 }
-.count span { font-size: 15px; font-weight: 500; color: var(--label-2); }
-.meter { height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
-.meter i { display: block; height: 100%; border-radius: inherit; background: var(--label); transform-origin: left; transition: transform 0.6s var(--spring); }
+.vc-speaker { flex: none; width: 20px; height: 20px; color: #23a55a; }
+.vc-emoji { font-size: 13px; line-height: 1; font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.vc-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vc-limit {
+  flex: none;
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+.vc-limit b,
+.vc-limit i { padding: 0 5px; font-style: normal; }
+.vc-limit b { color: #f2f3f5; background: rgba(255, 255, 255, 0.06); }
+.vc-limit i { color: #b5bac1; background: rgba(255, 255, 255, 0.14); }
+
+.vc-members { flex: 1; min-height: 0; margin: 0; padding: 0 0 0 22px; list-style: none; overflow: hidden; }
+.vc-member {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  transition: background 0.25s ease;
+}
+.vc-member:hover { background: rgba(255, 255, 255, 0.05); }
+.vc-av {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, hsl(var(--hue) 55% 62%), hsl(calc(var(--hue) + 35) 45% 40%));
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+.vc-av img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+/* Discord's green "speaking" ring, in short irregular bursts. */
+.vc-av::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #23a55a;
+  opacity: 0;
+}
+.slab.is-active .vc-member.talks .vc-av::after { animation: talk var(--talk-dur) linear var(--talk-delay) infinite; }
+@keyframes talk {
+  0%, 8% { opacity: 0; }
+  10%, 22% { opacity: 1; }
+  24%, 27% { opacity: 0; }
+  29%, 44% { opacity: 1; }
+  46%, 100% { opacity: 0; }
+}
+.vc-nick {
+  flex: 1;
+  font-family: var(--font), 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji';
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 500;
+  color: #b5bac1;
+}
+.vc-member.talks .vc-nick { color: #dbdee1; }
+.vc-state { flex: none; display: flex; gap: 4px; color: #80848e; }
+.vc-state svg { width: 16px; height: 16px; }
+
+.srv-foot { padding: 12px 6px 0; font-size: 12.5px; font-weight: 500; color: var(--label-3); }
 
 /* Page control */
 .pager { display: flex; justify-content: center; gap: 2px; padding: 0 0 18px; }
@@ -375,11 +453,10 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 /* ---------- Responsive ---------- */
 
 @media (max-width: 640px) {
-  .shell { --w: clamp(160px, min(58vw, calc((100dvh - 280px) / 1.3)), 250px); padding: 64px 0 28px; }
+  .shell { --w: clamp(250px, 76vw, 300px); --h: clamp(290px, calc(100dvh - 300px), 350px); padding: 64px 0 28px; }
   .corner { padding: 18px 18px; }
   .orbit-stage { height: calc(var(--h) + 48px); perspective: 1200px; }
   .slab { top: 22px; border-radius: 24px; }
-  .count span { font-size: 13px; }
   .discord { height: 58px; }
   .discord-content { font-size: 16px; }
 }

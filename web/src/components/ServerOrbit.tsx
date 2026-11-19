@@ -1,60 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { CSSProperties } from 'react';
-import type { Room } from '../rooms';
+import { useCallback, useEffect, useRef } from 'react';
+import type { Server } from '../servers';
+import ServerCard from './ServerCard';
 
 type Props = {
-  rooms: Room[];
+  servers: Server[];
   active: number;
   onActiveChange: (index: number) => void;
   revealed: boolean;
 };
 
-const BARS = 28;
-const DRAG_SENSITIVITY = 0.32; // degrees per pixel
+const DRAG_SENSITIVITY = 0.2; // degrees per pixel
 const SPRING_K = 58;
 const SPRING_C = 2 * Math.sqrt(SPRING_K) * 0.92;
+/** Up to this many servers sit on an open arc; more close into a full ring. */
+const ARC_STEP = 56;
+const RING_FROM = 7;
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 const wrap180 = (deg: number) => mod(deg + 180, 360) - 180;
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function seeded(seed: string) {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
-  return () => {
-    h = Math.imul(h ^ (h >>> 15), 2246822507);
-    h = Math.imul(h ^ (h >>> 13), 3266489909);
-    return ((h ^= h >>> 16) >>> 0) / 4294967296;
-  };
-}
-
-function VoiceBars({ room }: { room: Room }) {
-  const bars = useMemo(() => {
-    const rand = seeded(room.id);
-    const level = Math.min(1, 0.35 + room.members / 30);
-    return Array.from({ length: BARS }, (_, i) => {
-      const envelope = Math.sin((i / (BARS - 1)) * Math.PI) * 0.75 + 0.25;
-      const hi = Math.max(0.14, Math.min(1, envelope * level * (0.6 + rand() * 0.5)));
-      return {
-        '--hi': hi.toFixed(3),
-        '--lo': (hi * (0.12 + rand() * 0.25)).toFixed(3),
-        '--dur': `${(0.9 + rand() * 1.1).toFixed(2)}s`,
-        '--delay': `${(-rand() * 1.6).toFixed(2)}s`,
-      } as CSSProperties;
-    });
-  }, [room.id, room.members]);
-
-  return (
-    <div className="voice" aria-hidden="true">
-      {bars.map((style, i) => (
-        <i key={i} style={style} />
-      ))}
-    </div>
+export default function ServerOrbit({ servers, active, onActiveChange, revealed }: Props) {
+  const count = servers.length;
+  const ring = count >= RING_FROM;
+  const step = ring ? 360 / count : ARC_STEP;
+  const maxRot = ring ? Infinity : (count - 1) * step;
+  /** Index of the card closest to the front for a given rotation. */
+  const indexAt = useCallback(
+    (rot: number) => (ring ? mod(Math.round(rot / step), count) : clamp(Math.round(rot / step), 0, count - 1)),
+    [ring, step, count],
   );
-}
-
-export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: Props) {
-  const count = rooms.length;
-  const step = 360 / Math.max(count, 1);
+  const clampRot = useCallback((rot: number) => (ring ? rot : clamp(rot, 0, maxRot)), [ring, maxRot]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -64,8 +40,8 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
   onActiveRef.current = onActiveChange;
 
   const sim = useRef({
-    rot: -step * 0.3,
-    target: -step * 0.3,
+    rot: -step * 0.4,
+    target: -step * 0.4,
     vel: 0,
     dragging: false,
     pointerId: -1,
@@ -126,13 +102,14 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
       for (let i = 0; i < count; i++) {
         const el = slabRefs.current[i];
         if (!el) continue;
-        const theta = wrap180(i * step - s.rot);
+        const theta = ring ? wrap180(i * step - s.rot) : i * step - s.rot;
         const rad = (theta * Math.PI) / 180;
         const x = Math.sin(rad) * R;
         const z = (Math.cos(rad) - 1) * R;
-        const focus = (Math.cos(rad) + 1) / 2;
-        el.style.transform = `translate3d(${x.toFixed(2)}px, 0, ${z.toFixed(2)}px) rotateY(${(theta * 0.28).toFixed(2)}deg)`;
-        el.style.opacity = (0.38 + 0.62 * Math.pow(focus, 1.4)).toFixed(3);
+        // 1 at the front, 0 one slot away or further.
+        const focus = 1 - Math.min(1, Math.abs(theta) / step);
+        el.style.transform = `translate3d(${x.toFixed(2)}px, 0, ${z.toFixed(2)}px) rotateY(${(theta * 0.5).toFixed(2)}deg)`;
+        el.style.opacity = (0.42 + 0.58 * Math.pow(focus, 1.3)).toFixed(3);
         el.style.setProperty('--focus', focus.toFixed(3));
         el.style.zIndex = String(Math.round(focus * 100));
       }
@@ -141,7 +118,7 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         sceneRef.current.style.transform = `rotateX(${(-3 - s.tiltY * 2).toFixed(2)}deg) rotateY(${(s.tiltX * 4).toFixed(2)}deg)`;
       }
 
-      const nearest = mod(Math.round(s.rot / step), count);
+      const nearest = indexAt(s.rot);
       if (nearest !== activeRef.current) {
         activeRef.current = nearest;
         onActiveRef.current(nearest);
@@ -149,16 +126,20 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [count, step]);
+  }, [count, step, ring, indexAt]);
 
   const goTo = useCallback(
     (index: number) => {
       const s = sim.current;
       const base = index * step;
+      if (!ring) {
+        s.target = clampRot(base);
+        return;
+      }
       const turns = Math.round((s.rot - base) / 360);
       s.target = base + turns * 360;
     },
-    [step],
+    [step, ring, clampRot],
   );
 
   // External selection (pagination) → rotate.
@@ -195,7 +176,9 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
       const now = performance.now();
       const dx = e.clientX - s.lastX;
       const dtt = Math.max(1, now - s.lastT) / 1000;
-      s.rot -= dx * DRAG_SENSITIVITY;
+      // Rubber-band past the first / last server on the open arc.
+      const out = !ring && (s.rot < 0 || s.rot > maxRot);
+      s.rot -= dx * DRAG_SENSITIVITY * (out ? 0.3 : 1);
       s.vel = s.vel * 0.6 + ((-dx * DRAG_SENSITIVITY) / dtt) * 0.4;
       s.moved = Math.max(s.moved, Math.abs(e.clientX - s.startX));
       s.lastX = e.clientX;
@@ -211,13 +194,13 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         // A click on a side card brings it to the front.
         const hit = downTarget instanceof Element ? downTarget.closest<HTMLElement>('[data-index]') : null;
         if (hit) goTo(Number(hit.dataset.index));
-        else s.target = Math.round(s.rot / step) * step;
+        else s.target = clampRot(Math.round(s.rot / step) * step);
         return;
       }
       // Flick inertia, capped at one room past where the finger was released.
       const here = Math.round(s.rot / step);
       const projected = Math.round((s.rot + s.vel * 0.22) / step);
-      s.target = Math.max(here - 1, Math.min(here + 1, projected)) * step;
+      s.target = clampRot(Math.max(here - 1, Math.min(here + 1, projected)) * step);
     };
 
     const onLeave = () => {
@@ -229,10 +212,10 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
       const t = e.target;
       if (t instanceof Element && t.closest('input, textarea, select')) return;
       if (e.key === 'ArrowRight') {
-        s.target = Math.round(s.target / step) * step + step;
+        s.target = clampRot(Math.round(s.target / step) * step + step);
         e.preventDefault();
       } else if (e.key === 'ArrowLeft') {
-        s.target = Math.round(s.target / step) * step - step;
+        s.target = clampRot(Math.round(s.target / step) * step - step);
         e.preventDefault();
       }
     };
@@ -252,7 +235,7 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
       window.removeEventListener('keydown', onKey);
       document.documentElement.classList.remove('is-dragging');
     };
-  }, [goTo, step]);
+  }, [goTo, step, ring, maxRot, clampRot]);
 
   return (
     <div className="orbit">
@@ -260,51 +243,37 @@ export default function RoomOrbit({ rooms, active, onActiveChange, revealed }: P
         ref={stageRef}
         className="orbit-stage"
         role="listbox"
-        aria-label="Голосовые румы"
-        aria-activedescendant={rooms[active] ? `room-${rooms[active].id}` : undefined}
+        aria-label="Серверы и голосовые румы"
+        aria-activedescendant={servers[active] ? `server-${servers[active].id}` : undefined}
       >
         <div ref={sceneRef} className="orbit-scene">
-          {rooms.map((room, i) => {
-            const capacity = room.capacity ?? Math.max(room.members, 1);
-            const fill = Math.min(1, room.members / capacity);
-            return (
-              <article
-                key={room.id}
-                id={`room-${room.id}`}
-                ref={(el) => {
-                  slabRefs.current[i] = el;
-                }}
-                className={`slab ${i === active ? 'is-active' : ''}`}
-                data-index={i}
-                role="option"
-                aria-selected={i === active}
-                aria-label={`${room.name}, ${room.members} в эфире`}
-              >
-                <h2 className="slab-name">{room.name}</h2>
-                <VoiceBars room={room} />
-                <div className="slab-foot">
-                  <div className="count">
-                    <b>{room.members}</b>
-                    {room.capacity ? <span>из {room.capacity}</span> : null}
-                  </div>
-                  <div className="meter">
-                    <i style={{ transform: `scaleX(${fill})` }} />
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {servers.map((server, i) => (
+            <article
+              key={server.id}
+              id={`server-${server.id}`}
+              ref={(el) => {
+                slabRefs.current[i] = el;
+              }}
+              className={`slab server ${i === active ? 'is-active' : ''}`}
+              data-index={i}
+              role="option"
+              aria-selected={i === active}
+              aria-label={server.name}
+            >
+              <ServerCard server={server} />
+            </article>
+          ))}
         </div>
       </div>
 
-      <div className="pager" role="tablist" aria-label="Выбор рума">
-        {rooms.map((room, i) => (
+      <div className="pager" role="tablist" aria-label="Выбор сервера">
+        {servers.map((server, i) => (
           <button
-            key={room.id}
+            key={server.id}
             type="button"
             role="tab"
             aria-selected={i === active}
-            aria-label={room.name}
+            aria-label={server.name}
             className={i === active ? 'is-active' : ''}
             onClick={() => goTo(i)}
           >
