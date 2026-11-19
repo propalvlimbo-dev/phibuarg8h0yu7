@@ -77,11 +77,11 @@ function MemberRow({ m }: { m: Member }) {
 }
 
 /** Server icon from Discord's CDN; falls back to a coloured letter if it can't load. */
-function ServerIcon({ server }: { server: Server }) {
+export function ServerIcon({ server, className = '' }: { server: Server; className?: string }) {
   const [failed, setFailed] = useState(false);
   const showImage = server.iconUrl && !failed;
   return (
-    <span className={`srv-icon ${showImage ? 'has-image' : ''}`} style={{ '--hue': server.hue } as CSSProperties} aria-hidden="true">
+    <span className={`srv-icon ${showImage ? 'has-image' : ''} ${className}`} style={{ '--hue': server.hue } as CSSProperties} aria-hidden="true">
       {showImage ? (
         <img src={server.iconUrl} alt="" loading="eager" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} />
       ) : (

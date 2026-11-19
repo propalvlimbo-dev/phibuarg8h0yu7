@@ -14,7 +14,7 @@ export type MeState =
 // Shown only in `npm run dev` when the Go API isn't running, so the cabinet can still be previewed.
 const demoMe: Me = {
   user: { id: '0', username: 'demo', displayName: 'Демо-пользователь', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' },
-  subscription: { active: false, plan: null },
+  subscription: { active: true, plan: 'full' },
 };
 
 export function useMe() {

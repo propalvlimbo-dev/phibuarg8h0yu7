@@ -1,10 +1,11 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { logout, useMe } from '../api';
 import type { Me } from '../api';
 import { LensGlyph } from '../components/Logo';
-import ServerCard from '../components/ServerCard';
+import { ServerIcon } from '../components/ServerCard';
+import ServerModal from '../components/ServerModal';
 import { linkTo, navigate } from '../router';
 import { useServers } from '../servers';
 import type { Server } from '../servers';
@@ -12,7 +13,6 @@ import type { Server } from '../servers';
 type Section = { path: string; label: string };
 
 const SECTIONS: Section[] = [
-  { path: '/cabinet', label: 'Обзор' },
   { path: '/cabinet/servers', label: 'Серверы' },
   { path: '/cabinet/subscription', label: 'Подписка' },
   { path: '/cabinet/settings', label: 'Настройки' },
@@ -37,6 +37,12 @@ export default function Cabinet({ path }: { path: string }) {
   useEffect(() => {
     if (state.status === 'guest') navigate('/', { replace: true });
   }, [state.status]);
+
+  // /cabinet (and unknown sub-paths) open the first section.
+  const known = SECTIONS.some((s) => s.path === path);
+  useEffect(() => {
+    if (!known) navigate(SECTIONS[0].path, { replace: true });
+  }, [known]);
 
   if (state.status === 'loading' || state.status === 'guest') {
     return <main className="cab cab-center" aria-busy="true" />;
@@ -107,7 +113,6 @@ export default function Cabinet({ path }: { path: string }) {
       >
         {demo && <p className="cab-demo">Демо-режим: Go API не запущен, показаны тестовые данные</p>}
         <h1 className="cab-title">{section.label}</h1>
-        {section.path === '/cabinet' && <Overview me={me} servers={servers} />}
         {section.path === '/cabinet/servers' && <Servers servers={servers} subscribed={me.subscription.active} />}
         {section.path === '/cabinet/subscription' && <Subscription me={me} />}
         {section.path === '/cabinet/settings' && <Settings />}
@@ -133,92 +138,81 @@ function Panel({ children, className = '' }: { children: ReactNode; className?: 
   return <div className={`glass cab-panel ${className}`}>{children}</div>;
 }
 
-function Overview({ me, servers }: { me: Me; servers: Server[] }) {
-  const inVoice = servers.reduce((sum, s) => sum + (s.rooms[0]?.members.length ?? 0), 0);
-  const rooms = servers.reduce((sum, s) => sum + s.roomCount, 0);
+const LockIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+    <rect x="5" y="10.5" width="14" height="10" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
 
-  return (
-    <div className="cab-grid">
-      <Panel className="cab-profile">
-        <Avatar me={me} className="cab-avatar-lg" size={64} />
-        <div>
-          <p className="cab-hello">Привет, {me.user.displayName}</p>
-          <p className="cab-muted">@{me.user.username}</p>
-        </div>
-      </Panel>
-
-      <Panel>
-        <p className="cab-label">Доступ</p>
-        <p className="cab-value">{me.subscription.active ? 'Полный' : 'Бесплатный'}</p>
-        <p className="cab-muted">{me.subscription.active ? 'Все румы всех серверов' : 'Первые румы каждого сервера'}</p>
-        {!me.subscription.active && (
-          <a href="/cabinet/subscription" className="cab-link" onClick={linkTo('/cabinet/subscription')}>
-            Полный доступ →
-          </a>
-        )}
-      </Panel>
-
-      <Panel>
-        <p className="cab-label">Серверы</p>
-        <p className="cab-value">{servers.length}</p>
-        <p className="cab-muted">
-          {rooms} {plural(rooms, 'комната', 'комнаты', 'комнат')}
-        </p>
-      </Panel>
-
-      <Panel>
-        <p className="cab-label">В голосе сейчас</p>
-        <p className="cab-value">{inVoice}</p>
-        <p className="cab-muted">в открытых румах</p>
-      </Panel>
-    </div>
-  );
-}
-
+/** Server icons; a click opens the server sheet. Without a subscription everything is blurred and inert. */
 function Servers({ servers, subscribed }: { servers: Server[]; subscribed: boolean }) {
+  const [open, setOpen] = useState<Server | null>(null);
+
   return (
-    <div className="cab-servers">
-      {servers.map((server) => {
-        const locked = Math.max(0, server.roomCount - 1);
-        return (
-          <article key={server.id} className="glass cab-server">
-            <ServerCard server={server} showFoot={false} />
-            {locked > 0 && !subscribed && (
-              <div className="cab-locked">
-                <div className="cab-locked-rows" aria-hidden="true">
-                  {Array.from({ length: Math.min(3, locked) }, (_, i) => (
-                    <span key={i} />
-                  ))}
-                </div>
-                <p>
-                  Ещё {locked} {plural(locked, 'комната', 'комнаты', 'комнат')} — с полным доступом
-                </p>
-              </div>
-            )}
-          </article>
-        );
-      })}
+    <div className={`cab-srv-wrap ${subscribed ? '' : 'is-locked'}`}>
+      <div className="cab-srv-grid" aria-hidden={!subscribed || undefined} inert={!subscribed}>
+        {servers.map((server) => (
+          <button key={server.id} type="button" className="glass cab-srv" onClick={() => setOpen(server)}>
+            <ServerIcon server={server} className="srv-icon-lg" />
+            <span className="cab-srv-name">{server.name}</span>
+            <span className="cab-srv-meta">
+              {server.roomCount} {plural(server.roomCount, 'комната', 'комнаты', 'комнат')}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {!subscribed && (
+        <div className="cab-lock">
+          <div className="glass cab-lock-card">
+            <span className="cab-lock-icon">
+              <LockIcon />
+            </span>
+            <p className="cab-lock-title">Доступно по подписке</p>
+            <a href="/cabinet/subscription" className="cab-btn" onClick={linkTo('/cabinet/subscription')}>
+              Оформить
+            </a>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>{open && subscribed && <ServerModal key={open.id} server={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </div>
   );
 }
 
 function Subscription({ me }: { me: Me }) {
+  if (me.subscription.active) {
+    return (
+      <div className="cab-grid">
+        <Panel className="cab-plan is-featured">
+          <p className="cab-label">Подписка</p>
+          <p className="cab-value">Полный доступ</p>
+          <p className="cab-muted">Активна</p>
+          <ul className="cab-list">
+            <li>Все серверы</li>
+            <li>Поиск по каждому серверу</li>
+          </ul>
+        </Panel>
+      </div>
+    );
+  }
   return (
     <div className="cab-grid">
       <Panel className="cab-plan">
         <p className="cab-label">Сейчас</p>
-        <p className="cab-value">{me.subscription.active ? 'Полный доступ' : 'Бесплатный'}</p>
+        <p className="cab-value">Бесплатный</p>
         <ul className="cab-list">
-          <li>Первые румы каждого сервера</li>
-          <li>Кто сейчас в голосе</li>
+          <li>Первые румы на главной</li>
         </ul>
       </Panel>
       <Panel className="cab-plan is-featured">
         <p className="cab-label">Полный доступ</p>
         <p className="cab-value">Скоро</p>
         <ul className="cab-list">
-          <li>Все румы всех серверов</li>
-          <li>Полная информация по каждому руму</li>
+          <li>Все серверы</li>
+          <li>Поиск по каждому серверу</li>
         </ul>
         <button type="button" className="cab-btn" disabled>
           Оформить

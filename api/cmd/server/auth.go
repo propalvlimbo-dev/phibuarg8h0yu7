@@ -169,8 +169,8 @@ func (a *auth) me(w http.ResponseWriter, r *http.Request) {
 			"displayName": display,
 			"avatarUrl":   avatarURL(s.ID, s.Avatar),
 		},
-		// Subscriptions come later; everyone is on the free tier for now.
-		"subscription": map[string]any{"active": false, "plan": nil},
+		// Billing comes later; until then everyone gets full access.
+		"subscription": map[string]any{"active": true, "plan": "full"},
 	})
 }
 

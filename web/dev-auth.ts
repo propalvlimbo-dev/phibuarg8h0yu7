@@ -261,7 +261,8 @@ export default function devAuth({ envFile }: { envFile: string }): Plugin {
             if (!s) return json(res, 401, { error: 'unauthorized' });
             return json(res, 200, {
               user: { id: s.id, username: s.u, displayName: s.g || s.u, avatarUrl: avatarURL(s.id, s.a) },
-              subscription: { active: false, plan: null },
+              // Billing comes later; until then everyone gets full access (same as the Go API).
+              subscription: { active: true, plan: 'full' },
             });
           }
 
