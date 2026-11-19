@@ -1,17 +1,34 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import Background, { BACKGROUNDS, type BackgroundId } from './components/Background';
 import DiscordButton from './components/DiscordButton';
 import RoomOrbit from './components/RoomOrbit';
 import { useRooms } from './rooms';
 import './styles.css';
 
 const inviteUrl = import.meta.env.VITE_DISCORD_INVITE as string | undefined;
+const BG_KEY = 'girlscan-bg';
+
+function initialBackground(): BackgroundId {
+  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(BG_KEY) : null;
+  return BACKGROUNDS.some((b) => b.id === saved) ? (saved as BackgroundId) : 'threads';
+}
 
 export default function App() {
   const reduceMotion = useReducedMotion();
   const [revealed, setRevealed] = useState(false);
   const [active, setActive] = useState(0);
   const rooms = useRooms();
+  const [bg, setBg] = useState<BackgroundId>(initialBackground);
+
+  const chooseBg = (id: BackgroundId) => {
+    setBg(id);
+    try {
+      localStorage.setItem(BG_KEY, id);
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setRevealed(true));
@@ -41,6 +58,7 @@ export default function App() {
         <span className="light light-b" />
         <span className="light light-c" />
       </div>
+      <Background id={bg} />
 
       <motion.header className="corner" {...appear(0.05)}>
         <span className="wordmark">GirlScan</span>
@@ -59,6 +77,14 @@ export default function App() {
           <DiscordButton label="Войти через Discord" ariaLabel={current ? `Войти в ${current.name} через Discord` : undefined} onClick={enter} />
         </motion.div>
       </div>
+
+      <nav className="bg-switch" aria-label="Фон">
+        {BACKGROUNDS.map((b) => (
+          <button key={b.id} type="button" className={b.id === bg ? 'is-active' : ''} aria-pressed={b.id === bg} onClick={() => chooseBg(b.id)}>
+            {b.label}
+          </button>
+        ))}
+      </nav>
 
       <p className="sr-only" aria-live="polite">
         {current ? `${current.name}: ${current.members} в эфире` : ''}
