@@ -101,8 +101,20 @@ export const previewServers: Server[] = [
   },
 ];
 
+/** Dev only: `?demo=12` fills the carousel with copies of the placeholders to preview many servers. */
+function demoServers(): Server[] | null {
+  if (!import.meta.env.DEV || typeof location === 'undefined') return null;
+  const n = Number(new URLSearchParams(location.search).get('demo'));
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Array.from({ length: Math.min(n, 40) }, (_, i) => {
+    const base = previewServers[i % previewServers.length];
+    const lap = Math.floor(i / previewServers.length);
+    return lap === 0 ? base : { ...base, id: `${base.id}-${lap}`, name: `${base.name} ${lap + 1}`, hue: (base.hue + lap * 47) % 360 };
+  });
+}
+
 export function useServers(): Server[] {
-  const [servers, setServers] = useState<Server[]>(previewServers);
+  const [servers, setServers] = useState<Server[]>(() => demoServers() ?? previewServers);
 
   useEffect(() => {
     // During local Vite development use preview data.
