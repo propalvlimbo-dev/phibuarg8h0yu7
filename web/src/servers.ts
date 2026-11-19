@@ -20,6 +20,10 @@ export type VoiceRoom = {
   members: Member[];
 };
 
+/** Discord CDN server icon (animated icons have an `a_` hash; `animated=true` keeps them moving). */
+const discordIcon = (guildId: string, hash: string, size = 128) =>
+  `https://cdn.discordapp.com/icons/${guildId}/${hash}.webp?size=${size}&animated=true`;
+
 export type Server = {
   id: string;
   name: string;
@@ -36,6 +40,7 @@ export const previewServers: Server[] = [
     id: 'xivivide',
     name: 'Xivivide',
     hue: 352,
+    iconUrl: discordIcon('1239260433551200276', 'a_22dec9f014cefe6ec09b03fc315f5d25'),
     roomCount: 12,
     rooms: [
       {
@@ -57,6 +62,7 @@ export const previewServers: Server[] = [
     id: 'elysium',
     name: 'Elysium',
     hue: 42,
+    iconUrl: discordIcon('856646640329031721', 'a_70de26123bf3d4ce31b6748bbcd3414b'),
     roomCount: 8,
     rooms: [
       {
@@ -68,6 +74,27 @@ export const previewServers: Server[] = [
           { id: 'e1', name: '! В войсе, не пишу', hue: 330, talks: true },
           { id: 'e2', name: 'ʀᴏɴɪɴ ᴅᴜꜱᴋ', hue: 200, talks: true },
           { id: 'e3', name: 'Pixel 🦋', hue: 190, muted: true, deafened: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'lounge',
+    name: 'Lounge',
+    hue: 250,
+    iconUrl: discordIcon('254958490676625408', 'a_5a440bf390ab640719fd3729b10eb708'),
+    roomCount: 15,
+    rooms: [
+      {
+        id: 'lounge-1',
+        name: 'чилл',
+        emoji: '🎧',
+        limit: 10,
+        members: [
+          { id: 'l1', name: 'ночной гость', hue: 210, talks: true },
+          { id: 'l2', name: '! afk 5 мин', hue: 30, muted: true },
+          { id: 'l3', name: 'ᴠᴇʟᴠᴇᴛ', hue: 280, talks: true },
+          { id: 'l4', name: 'Сова 🦉', hue: 120 },
         ],
       },
     ],

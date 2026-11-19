@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Member, Server } from '../servers';
 
@@ -76,6 +76,21 @@ function MemberRow({ m }: { m: Member }) {
   );
 }
 
+/** Server icon from Discord's CDN; falls back to a coloured letter if it can't load. */
+function ServerIcon({ server }: { server: Server }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = server.iconUrl && !failed;
+  return (
+    <span className={`srv-icon ${showImage ? 'has-image' : ''}`} style={{ '--hue': server.hue } as CSSProperties} aria-hidden="true">
+      {showImage ? (
+        <img src={server.iconUrl} alt="" loading="eager" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : (
+        initial(server.name)
+      )}
+    </span>
+  );
+}
+
 /** Discord-style card: server header, its first (public) voice room and who is in it. */
 export default function ServerCard({ server }: { server: Server }) {
   const room = server.rooms[0];
@@ -85,9 +100,7 @@ export default function ServerCard({ server }: { server: Server }) {
   return (
     <>
       <header className="srv-head">
-        <span className="srv-icon" style={{ '--hue': server.hue } as CSSProperties} aria-hidden="true">
-          {server.iconUrl ? <img src={server.iconUrl} alt="" /> : initial(server.name)}
-        </span>
+        <ServerIcon server={server} />
         <h2 className="srv-name">{server.name}</h2>
       </header>
 
