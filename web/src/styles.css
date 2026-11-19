@@ -35,34 +35,6 @@ button { font: inherit; color: inherit; }
 }
 @keyframes bg-in { from { opacity: 0; } }
 
-.bg-switch {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  z-index: 3;
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-.bg-switch button {
-  padding: 5px 11px;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--label-3);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.3s ease, background 0.3s ease;
-}
-.bg-switch button:hover { color: var(--label-2); }
-.bg-switch button.is-active { color: var(--label); background: rgba(255, 255, 255, 0.1); }
 .light {
   position: absolute;
   border-radius: 50%;
@@ -95,17 +67,6 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   pointer-events: none;
 }
 .wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.022em; }
-.live {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--label-2);
-  font-variant-numeric: tabular-nums;
-}
-.live i { width: 7px; height: 7px; border-radius: 50%; background: #30d158; }
 
 .shell {
   --w: clamp(190px, min(24vw, calc((100dvh - 300px) / 1.3)), 320px);
@@ -297,23 +258,16 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 }
 .clyde3d,
 .clyde-half,
-.clyde-layer,
-.clyde-eyes3d { position: absolute; inset: 0; transform-style: preserve-3d; }
-.clyde-layer,
-.clyde-eyes3d { display: block; width: 100%; height: 100%; overflow: visible; }
+.clyde-layer { position: absolute; inset: 0; transform-style: preserve-3d; }
+.clyde-layer { display: block; width: 100%; height: 100%; overflow: visible; }
 .layer-front { fill: #ffffff; transform: translateZ(1.2px); }
 .layer-edge { fill: #c9cfff; transform: translateZ(0); }
 .layer-back { fill: #eef0ff; transform: translateZ(-1.2px); }
-.clyde-eyes3d { fill: #ffd76a; opacity: 0; transform: translateZ(0.4px); transition: opacity 0.6s var(--smooth); }
-
-.discord:hover .clyde-eyes3d,
-.discord:focus-visible .clyde-eyes3d { opacity: 1; }
 
 /* Spins to the right; mid-turn it comes apart and snaps back together. */
 .clyde3d.is-spinning { animation: clyde-spin 1.7s cubic-bezier(0.6, 0, 0.35, 1) infinite; }
 .clyde3d.is-spinning .half-l { animation: clyde-half-l 1.7s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
 .clyde3d.is-spinning .half-r { animation: clyde-half-r 1.7s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
-.clyde3d.is-spinning .clyde-eyes3d { animation: clyde-eyes 1.7s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
 
 @keyframes clyde-spin {
   from { transform: rotateY(0deg); }
@@ -328,11 +282,6 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   0%, 14% { transform: none; }
   38%, 56% { transform: translate3d(5px, 1px, 7px) rotateZ(10deg); }
   84%, 100% { transform: none; }
-}
-@keyframes clyde-eyes {
-  0%, 14% { transform: translateZ(0.4px); }
-  38%, 56% { transform: translateZ(14px) scale(1.18); }
-  84%, 100% { transform: translateZ(0.4px); }
 }
 
 .discord:hover .discord-body {
@@ -354,6 +303,3 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
   .discord-content { font-size: 16px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-}

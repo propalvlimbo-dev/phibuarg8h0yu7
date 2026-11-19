@@ -5,8 +5,8 @@ React + TypeScript frontend (minimal Apple-style glass UI with a rotatable 3D ro
 ## Interface
 
 - Three voice rooms as glass cards on a 3D carousel — drag / swipe anywhere on the page, arrow keys, click a side card, or use the page dots.
-- **Animated background**: WebGL Threads / Aurora / Waves from [React Bits](https://github.com/DavidHDev/react-bits) by David Haz (MIT + Commons Clause, licence in `web/src/backgrounds/`). Switch it with the pill at the bottom; the choice is saved in localStorage.
-- **Discord button** (periodic shine; on hover it grows with a spring, and Clyde spins to the right in 3D like the Discord loading screen, coming apart into halves mid-turn while its eyes light up) opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
+- **Animated background**: WebGL Threads from [React Bits](https://github.com/DavidHDev/react-bits) by David Haz (MIT + Commons Clause, licence in `web/src/backgrounds/`), with a gentle mouse reaction.
+- **Discord button** (periodic shine; on hover it grows with a spring, and Clyde spins to the right in 3D like the Discord loading screen, coming apart into halves mid-turn) opens `VITE_DISCORD_INVITE` if it is set at build time (otherwise it is a stub).
 
 Code: `web/src/components/RoomOrbit.tsx` (3D carousel), `web/src/components/DiscordButton.tsx`, `web/src/rooms.ts` (data / placeholder rooms), `web/src/styles.css` (glass material).
 

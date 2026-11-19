@@ -173,7 +173,7 @@ const locate = (gl, program, names) => {
 
 const Threads = ({
   color = [1, 1, 1],
-  accentColor,
+  accentColor = undefined,
   amplitude = 1.7,
   distance = 0.4,
   enableMouseInteraction = false,
@@ -192,6 +192,7 @@ const Threads = ({
   fade = 0,
   opacity = 1,
   paused = false,
+  mouseInfluence = 1,
   ...rest
 }) => {
   const containerRef = useRef(null);
@@ -221,7 +222,8 @@ const Threads = ({
     brightness: clamp(brightness, 0.25, 2),
     fade: clamp(fade, 0, 1),
     opacity: clamp(opacity, 0, 1),
-    paused
+    paused,
+    mouseInfluence: clamp(mouseInfluence, 0, 1)
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -294,7 +296,8 @@ const Threads = ({
     probe.width = 1;
     probe.height = 1;
     const probeContext = probe.getContext('2d', { willReadFrequently: true });
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    // GirlScan: always animate (the site owner wants motion even with OS 'reduce motion').
+    const reduce = false;
     const state = {
       time: 0,
       width: 1,
@@ -375,7 +378,10 @@ const Threads = ({
       const length = Math.abs(w * cos) + Math.abs(h * sin);
       const across = Math.abs(w * sin) + Math.abs(h * cos);
       const scale = w / state.width;
-      const mouse = s.enableMouseInteraction ? state.mouse : [0.5, 0.5];
+      const k = s.mouseInfluence ?? 1;
+      const mouse = s.enableMouseInteraction
+        ? [0.5 + (state.mouse[0] - 0.5) * k, 0.5 + (state.mouse[1] - 0.5) * k]
+        : [0.5, 0.5];
       const strength = s.parting * state.presence * 2;
       const px = state.pointer[0] * scale;
       const py = state.pointer[1] * scale;
@@ -434,7 +440,7 @@ const Threads = ({
       last = now;
       const moving = !s.paused && !reduce;
       if (moving) state.time += dt * s.speed;
-      const follow = 1 - Math.exp(-dt * 3);
+      const follow = 1 - Math.exp(-dt * 1.2); // GirlScan: softer, slower mouse follow
       state.mouse[0] += (state.targetMouse[0] - state.mouse[0]) * follow;
       state.mouse[1] += (state.targetMouse[1] - state.mouse[1]) * follow;
       const glide = 1 - Math.exp(-dt * 10);

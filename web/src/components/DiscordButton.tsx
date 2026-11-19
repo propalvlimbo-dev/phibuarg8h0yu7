@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useId, useRef, useState } from 'react';
 import type { AnimationEvent } from 'react';
 
@@ -28,13 +28,11 @@ function Half({ side, clipId }: { side: 'l' | 'r'; clipId: string }) {
 }
 
 export default function DiscordButton({ label, ariaLabel, onClick }: Props) {
-  const reduceMotion = useReducedMotion();
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const [spinning, setSpinning] = useState(false);
   const stopAfterTurn = useRef(false);
 
   const startSpin = () => {
-    if (reduceMotion) return;
     stopAfterTurn.current = false;
     setSpinning(true);
   };
@@ -56,8 +54,8 @@ export default function DiscordButton({ label, ariaLabel, onClick }: Props) {
       onHoverEnd={requestStop}
       onFocus={startSpin}
       onBlur={requestStop}
-      whileHover={reduceMotion ? undefined : { scale: 1.06 }}
-      whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+      whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 220, damping: 18, mass: 0.9 }}
     >
       <span className="discord-body" aria-hidden="true">
@@ -78,10 +76,6 @@ export default function DiscordButton({ label, ariaLabel, onClick }: Props) {
           <span className={`clyde3d ${spinning ? 'is-spinning' : ''}`} onAnimationIteration={onIteration}>
             <Half side="l" clipId={uid} />
             <Half side="r" clipId={uid} />
-            <svg className="clyde-eyes3d" viewBox={VIEWBOX}>
-              <ellipse cx="42.45" cy="53" rx="11.6" ry="12.9" />
-              <ellipse cx="84.69" cy="53" rx="11.6" ry="12.9" />
-            </svg>
           </span>
         </span>
         <span className="discord-label">{label}</span>
