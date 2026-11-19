@@ -31,11 +31,11 @@ Open `http://localhost:8080`.
 
 ## Local development
 
-**Windows, one click:** run `start.bat` from the repo root. On the first run it asks for the Discord Client Secret (or takes it as an argument: `start.bat <secret>`) and writes `.env`, installs Go via winget if needed, runs `npm install`, builds the API to `bin\girlscan-api.exe`, starts the API (127.0.0.1:8080) and Vite (5173) in their own windows and opens the browser. Close those two windows to stop.
+**Windows, one click:** run `start.bat` from the repo root. On the first run it asks for the Discord Client Secret (or takes it as an argument: `start.bat <secret>`) and writes `.env`, then runs `npm install` and `npm run dev` and opens the browser. Only Node.js is needed: in dev, Discord login is served by the Vite server itself (`web/dev-auth.ts`, same endpoints, cookies and session format as the Go API), so no Go toolchain is required locally (Windows Smart App Control blocks the unsigned Go compiler). Other `/api` routes are proxied to Go on 8080 if it's running.
 
 Manually:
 
-Terminal 1 — API (Go 1.23+, run from the repo root so it picks up `.env`):
+Terminal 1 — API (optional in dev; Go 1.23+, run from the repo root so it picks up `.env`):
 
 ```bash
 go run ./api/cmd/server
