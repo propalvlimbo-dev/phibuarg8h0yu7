@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <rect width="128" height="128" rx="36" fill="#5865f2"/>
   <g transform="translate(19 18) scale(0.9)" fill="#fff">
-    <path fill-rule="evenodd" d="M41,10a33,33 0 1,0 0.001,0ZM29.6,36.2a6.6,7.8 0 1,0 0.001,0ZM52.4,36.2a6.6,7.8 0 1,0 0.001,0Z"/>
+    <path fill-rule="evenodd" d="M41,10a33,33 0 1,0 0.001,0ZM41,23a20,20 0 1,0 0.001,0Z"/>
     <path d="M62,64L85,87" stroke="#fff" stroke-width="18" stroke-linecap="round" fill="none"/>
   </g>
 </svg>
