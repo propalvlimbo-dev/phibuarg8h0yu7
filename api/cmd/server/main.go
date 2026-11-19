@@ -53,6 +53,10 @@ func main() {
 }
 
 func address() string {
+	// ADDR (e.g. 127.0.0.1:8080) binds to one interface; start.bat uses it so Windows doesn't ask about the firewall.
+	if addr := os.Getenv("ADDR"); addr != "" {
+		return addr
+	}
 	if port := os.Getenv("PORT"); port != "" {
 		return ":" + port
 	}

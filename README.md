@@ -17,7 +17,7 @@ Code: `web/src/pages/Landing.tsx`, `web/src/pages/Cabinet.tsx`, `web/src/router.
 1. https://discord.com/developers/applications → **New Application** → tab **OAuth2**.
 2. Copy **Client ID**, press **Reset Secret** and copy **Client Secret**.
 3. **Redirects** → add `http://localhost:5173/api/auth/callback` (and `https://<domain>/api/auth/callback` for production) → **Save Changes**.
-4. Copy `.env.example` to `.env` in the repo root and fill in `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET` (any random string ≥ 32 chars; for production also `DISCORD_REDIRECT_URI`). `.env` is git-ignored — never commit it.
+4. Copy `.env.example` to `.env` in the repo root and fill in `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET` (optional: if missing, the server generates one and appends it to `.env`; for production also set `DISCORD_REDIRECT_URI`). `.env` is git-ignored — never commit it.
 
 Flow: `GET /api/auth/login` → Discord (scope `identify` only) → `GET /api/auth/callback` → HMAC-signed HttpOnly cookie `gs_session` (30 days) → `/cabinet`. Other endpoints: `GET /api/auth/status`, `GET /api/me`, `POST /api/auth/logout`. No database yet: the Discord access token isn't stored, subscription is always `active: false` until billing exists.
 
@@ -30,6 +30,10 @@ docker compose up --build
 Open `http://localhost:8080`.
 
 ## Local development
+
+**Windows, one click:** run `start.bat` from the repo root. On the first run it asks for the Discord Client Secret (or takes it as an argument: `start.bat <secret>`) and writes `.env`, installs Go via winget if needed, runs `npm install`, builds the API to `bin\girlscan-api.exe`, starts the API (127.0.0.1:8080) and Vite (5173) in their own windows and opens the browser. Close those two windows to stop.
+
+Manually:
 
 Terminal 1 — API (Go 1.23+, run from the repo root so it picks up `.env`):
 

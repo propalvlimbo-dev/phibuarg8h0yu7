@@ -40,13 +40,18 @@ func loadConfig() config {
 	case len(secret) >= 32:
 		cfg.SessionSecret = []byte(secret)
 	default:
-		// Without a fixed secret sessions still work, but everyone is logged out on restart.
-		buf := make([]byte, 32)
-		if _, err := rand.Read(buf); err != nil {
+		generated, err := randomToken(32)
+		if err != nil {
 			log.Fatal(err)
 		}
-		cfg.SessionSecret = buf
-		log.Printf("SESSION_SECRET is not set (or shorter than 32 chars): using a random one, sessions reset on restart")
+		cfg.SessionSecret = []byte(generated)
+		// Persist it next to the other settings so logins survive restarts. Fails harmlessly on read-only
+		// filesystems (Docker), where sessions then reset on restart.
+		if _, statErr := os.Stat(".env"); statErr == nil && secret == "" && appendDotEnv(".env", "SESSION_SECRET", generated) == nil {
+			log.Printf("SESSION_SECRET was missing: generated one and saved it to .env")
+		} else {
+			log.Printf("SESSION_SECRET is not set (or shorter than 32 chars): using a random one, sessions reset on restart")
+		}
 	}
 
 	if cfg.discordConfigured() {
@@ -84,6 +89,25 @@ func loadDotEnv(path string) {
 			_ = os.Setenv(key, value)
 		}
 	}
+}
+
+// appendDotEnv adds KEY=value as a new line at the end of the file.
+func appendDotEnv(path, key, value string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	prefix := ""
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		prefix = "\n"
+	}
+	_, err = f.WriteString(prefix + key + "=" + value + "\n")
+	return err
 }
 
 func randomToken(n int) (string, error) {

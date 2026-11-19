@@ -13,3 +13,6 @@ web/vite.config.d.ts
 # OS/editor
 .DS_Store
 .vscode/
+
+# Local builds
+bin/
